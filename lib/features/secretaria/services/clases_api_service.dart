@@ -15,7 +15,9 @@ class ClasesApiService implements ClasesService {
   // En web/emulador apunta al API de Render; en tests se puede inyectar otro.
   static const _base = 'https://musculo-y-forma.onrender.com/api';
 
-  static const _timeout = Duration(seconds: 10); // Regla 11 CLAUDE.md
+  // Render Free hace cold start de ~50 seg; escrituras usan timeout extendido
+  static const _timeout = Duration(seconds: 10);
+  static const _timeoutWrite = Duration(seconds: 60);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -34,19 +36,19 @@ class ClasesApiService implements ClasesService {
   Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
     final res = await _client
         .post(_uri(path), headers: _headers, body: jsonEncode(body))
-        .timeout(_timeout);
+        .timeout(_timeoutWrite);
     return _parse(res);
   }
 
   Future<Map<String, dynamic>> _put(String path, Map<String, dynamic> body) async {
     final res = await _client
         .put(_uri(path), headers: _headers, body: jsonEncode(body))
-        .timeout(_timeout);
+        .timeout(_timeoutWrite);
     return _parse(res);
   }
 
   Future<Map<String, dynamic>> _patch(String path) async {
-    final res = await _client.patch(_uri(path), headers: _headers).timeout(_timeout);
+    final res = await _client.patch(_uri(path), headers: _headers).timeout(_timeoutWrite);
     return _parse(res);
   }
 
