@@ -32,6 +32,9 @@ const corsOptions = {
 app.options('*', cors(corsOptions));
 app.use(cors(corsOptions));
 
+// Render corre detrás de un proxy — necesario para rate-limit e IPs reales
+app.set('trust proxy', 1);
+
 // Body parser
 app.use(express.json({ limit: '100kb' }));
 
