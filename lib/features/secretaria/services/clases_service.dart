@@ -7,6 +7,7 @@ abstract class ClasesService {
   Future<Clase> crearClase({required String nombre, String? descripcion});
   Future<Clase> actualizarClase(String id, {String? nombre, String? descripcion});
   Future<Clase> inhabilitarClase(String id);
+  Future<Clase> reactivarClase(String id);
   Future<Clase> agregarHorario(String idClase, HorarioClase horario);
   Future<Clase> actualizarHorario(String idClase, int index, HorarioClase horario);
   Future<Clase> inhabilitarHorario(String idClase, int index);

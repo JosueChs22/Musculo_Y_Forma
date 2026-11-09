@@ -101,6 +101,13 @@ class ClasesApiService implements ClasesService {
     return Clase.fromJson(json);
   }
 
+  @override
+  Future<Clase> reactivarClase(String id) async {
+    await _patch('/clases/$id/reactivar');
+    final json = await _get('/clases/$id');
+    return Clase.fromJson(json);
+  }
+
   // ── Horarios ──────────────────────────────────────────────────────────────
 
   @override

@@ -102,6 +102,18 @@ class ClasesMockService implements ClasesService {
       });
 
   @override
+  Future<Clase> reactivarClase(String id) =>
+      Future.delayed(latency, () {
+        final i = _indexOf(id);
+        final actualizada = _clases[i].copyWith(
+          estado: 'Activo',
+          fechaActualizacion: DateTime.now(),
+        );
+        _clases[i] = actualizada;
+        return actualizada;
+      });
+
+  @override
   Future<Clase> agregarHorario(String idClase, HorarioClase horario) =>
       Future.delayed(latency, () {
         final i = _indexOf(idClase);

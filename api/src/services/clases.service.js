@@ -67,6 +67,15 @@ async function inhabilitarClase(id) {
   return matchedCount === 1;
 }
 
+async function reactivarClase(id) {
+  const db = getDb();
+  const { matchedCount } = await db.collection(COL).updateOne(
+    { _id: new ObjectId(id), estado: 'Inhabilitada' },
+    { $set: { estado: 'Activo', fecha_actualizacion: new Date() } }
+  );
+  return matchedCount === 1;
+}
+
 async function agregarHorario(claseId, h) {
   const db = getDb();
   const horario = { dias: h.dias.map(Number).sort(), hora_inicio: h.hora_inicio, hora_fin: h.hora_fin, estado: 'Activo' };
@@ -101,4 +110,4 @@ async function inhabilitarHorario(claseId, index) {
   return matchedCount === 1;
 }
 
-module.exports = { listarClases, obtenerClase, crearClase, actualizarClase, inhabilitarClase, agregarHorario, actualizarHorario, inhabilitarHorario };
+module.exports = { listarClases, obtenerClase, crearClase, actualizarClase, inhabilitarClase, reactivarClase, agregarHorario, actualizarHorario, inhabilitarHorario };

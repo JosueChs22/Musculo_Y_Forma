@@ -60,6 +60,21 @@ class ClasesController extends BaseController {
     notify();
   }
 
+  Future<void> reactivarClase(String id) async {
+    final original = _clases.firstWhere((c) => c.id == id);
+    _clases = [for (final c in _clases) c.id == id ? c.copyWith(estado: 'Activo') : c];
+    notify();
+
+    try {
+      final confirmada = await _service.reactivarClase(id);
+      _clases = [for (final c in _clases) c.id == id ? confirmada : c];
+    } catch (_) {
+      _clases = [for (final c in _clases) c.id == id ? original : c];
+      _setError('No se pudo reactivar la clase. Los cambios fueron revertidos.');
+    }
+    notify();
+  }
+
   // ── Horarios ──────────────────────────────────────────────────────────────
 
   Future<void> agregarHorario(String idClase, HorarioClase horario) async {

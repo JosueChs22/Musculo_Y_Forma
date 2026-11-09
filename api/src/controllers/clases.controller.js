@@ -49,6 +49,15 @@ async function inhabilitar(req, res, next) {
   } catch (err) { next(err); }
 }
 
+async function reactivar(req, res, next) {
+  try {
+    if (!parsearId(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
+    const ok = await service.reactivarClase(req.params.id);
+    if (!ok) return res.status(404).json({ error: 'Clase no encontrada o ya activa' });
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+}
+
 async function agregarHorario(req, res, next) {
   try {
     if (!parsearId(req.params.id)) return res.status(400).json({ error: 'ID inválido' });
@@ -84,4 +93,4 @@ async function inhabilitarHorario(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { listar, obtener, crear, actualizar, inhabilitar, agregarHorario, actualizarHorario, inhabilitarHorario };
+module.exports = { listar, obtener, crear, actualizar, inhabilitar, reactivar, agregarHorario, actualizarHorario, inhabilitarHorario };

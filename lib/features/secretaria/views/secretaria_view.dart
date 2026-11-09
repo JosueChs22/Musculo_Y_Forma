@@ -268,9 +268,12 @@ class _ClaseMenu extends StatelessWidget {
           ),
         ] else
           PopupMenuItem(
-            value: 'inhabilitar',
-            enabled: false,
-            child: Text('Inhabilitada', style: ts(14, color: AppColors.pizarra)),
+            value: 'reactivar',
+            child: Row(children: [
+              const Icon(Icons.check_circle_outline, size: 18, color: AppColors.success),
+              const SizedBox(width: 10),
+              Text('Reactivar', style: ts(14, color: AppColors.success)),
+            ]),
           ),
       ],
     );
@@ -293,6 +296,17 @@ class _ClaseMenu extends StatelessWidget {
       if (!confirmar || !context.mounted) return;
       final ctrl = context.read<ClasesController>();
       await ctrl.inhabilitarClase(clase.id);
+      if (!context.mounted) return;
+      _mostrarSnackError(context);
+    } else if (accion == 'reactivar') {
+      final confirmar = await _confirmarDialog(
+        context,
+        titulo: 'Reactivar clase',
+        mensaje: '¿Reactivar la clase "${clase.nombre}"?',
+      );
+      if (!confirmar || !context.mounted) return;
+      final ctrl = context.read<ClasesController>();
+      await ctrl.reactivarClase(clase.id);
       if (!context.mounted) return;
       _mostrarSnackError(context);
     }
