@@ -16,9 +16,12 @@ const app = express();
 app.use(helmet());
 app.use(compression());
 
-// CORS
-const origins = (process.env.CORS_ORIGINS || '').split(',').map((o) => o.trim()).filter(Boolean);
-app.use(cors({ origin: origins.length ? origins : '*' }));
+// CORS — si CORS_ORIGINS='*' se permite todo; si no, lista separada por coma
+const corsEnv = process.env.CORS_ORIGINS || '*';
+const corsOrigin = corsEnv.trim() === '*'
+  ? '*'
+  : corsEnv.split(',').map((o) => o.trim()).filter(Boolean);
+app.use(cors({ origin: corsOrigin }));
 
 // Body parser
 app.use(express.json({ limit: '100kb' }));
