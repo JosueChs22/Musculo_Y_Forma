@@ -31,14 +31,15 @@ class Clase {
       horarios.where((h) => h.activo).toList();
 
   factory Clase.fromJson(Map<String, dynamic> json) => Clase(
-        id: json['_id'] as String,
+        // API devuelve 'id'; BD devuelve '_id'
+        id: (json['id'] ?? json['_id']) as String,
         nombre: json['nombre'] as String,
         descripcion: json['descripcion'] as String?,
         instructores: List<String>.from(json['instructores'] as List? ?? []),
         estado: json['estado'] as String,
-        fechaActualizacion: json['fecha_actualizacion'] == null
+        fechaActualizacion: json['fechaActualizacion'] == null && json['fecha_actualizacion'] == null
             ? null
-            : DateTime.parse(json['fecha_actualizacion'] as String),
+            : DateTime.parse((json['fechaActualizacion'] ?? json['fecha_actualizacion']) as String),
         horarios: (json['horarios'] as List? ?? [])
             .map((h) => HorarioClase.fromJson(h as Map<String, dynamic>))
             .toList(),

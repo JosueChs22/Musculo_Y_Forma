@@ -28,8 +28,9 @@ class HorarioClase {
 
   factory HorarioClase.fromJson(Map<String, dynamic> json) => HorarioClase(
         dias: List<int>.from(json['dias'] as List),
-        horaInicio: json['hora_inicio'] as String,
-        horaFin: json['hora_fin'] as String,
+        // API devuelve camelCase; BD devuelve snake_case
+        horaInicio: (json['horaInicio'] ?? json['hora_inicio']) as String,
+        horaFin: (json['horaFin'] ?? json['hora_fin']) as String,
         estado: json['estado'] as String,
       );
 

@@ -15,7 +15,7 @@ import 'features/rutinas/controllers/rutinas_controller.dart';
 import 'features/rutinas/services/rutinas_mock_service.dart';
 import 'features/rutinas/services/rutinas_service.dart';
 import 'features/secretaria/controllers/clases_controller.dart';
-import 'features/secretaria/services/clases_mock_service.dart';
+import 'features/secretaria/services/clases_api_service.dart';
 import 'features/secretaria/services/clases_service.dart';
 
 /// Servicios de la app. Cuando exista la API, se cambian los Mock por los
@@ -33,8 +33,7 @@ class AppServices {
   final ProgresoService progreso;
   final CoachService coach;
 
-  // ignore: prefer_const_constructors
-  ClasesService get clases => ClasesMockService();
+  ClasesService get clases => ClasesApiService();
 }
 
 void main() => runApp(const AppRoot());
