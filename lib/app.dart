@@ -2,28 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/theme.dart';
-import 'screens/coach_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/progress_screen.dart';
-import 'screens/routines_screen.dart';
-import 'screens/shell.dart';
 
-Page<void> _page(Widget child) => NoTransitionPage<void>(child: child);
-
+// Rutas de la app. Por ahora solo hay una pantalla vacía de arranque;
+// el login (RF-033) y el panel de administrador se agregan aquí.
 final _router = GoRouter(
   routes: [
-    ShellRoute(
-      builder: (context, state, child) =>
-          AppShell(location: state.uri.path, child: child),
-      routes: [
-        GoRoute(path: '/', pageBuilder: (c, s) => _page(const HomeScreen())),
-        GoRoute(path: '/rutinas', pageBuilder: (c, s) => _page(const RoutinesScreen())),
-        GoRoute(path: '/progreso', pageBuilder: (c, s) => _page(const ProgressScreen())),
-        GoRoute(path: '/perfil', pageBuilder: (c, s) => _page(const ProfileScreen())),
-        GoRoute(path: '/coach', pageBuilder: (c, s) => _page(const CoachScreen())),
-      ],
-    ),
+    GoRoute(path: '/', builder: (context, state) => const _InicioVacio()),
   ],
 );
 
@@ -37,6 +21,20 @@ class PulsoApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       routerConfig: _router,
+    );
+  }
+}
+
+/// Pantalla temporal mientras se construye el login.
+class _InicioVacio extends StatelessWidget {
+  const _InicioVacio();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Text('PULSO', style: ts(30, weight: kBlack, spacing: -.6)),
+      ),
     );
   }
 }
