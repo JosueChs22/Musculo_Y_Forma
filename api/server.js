@@ -21,7 +21,16 @@ const corsEnv = process.env.CORS_ORIGINS || '*';
 const corsOrigin = corsEnv.trim() === '*'
   ? '*'
   : corsEnv.split(',').map((o) => o.trim()).filter(Boolean);
-app.use(cors({ origin: corsOrigin }));
+
+const corsOptions = {
+  origin: corsOrigin,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Accept'],
+};
+
+// Responder preflight OPTIONS en todas las rutas (necesario para POST/PUT/PATCH desde el navegador)
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
 
 // Body parser
 app.use(express.json({ limit: '100kb' }));
