@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -23,8 +22,8 @@ class ClasesApiService implements ClasesService {
   Uri _uri(String path) => Uri.parse('$_base$path');
 
   Map<String, String> get _headers => {
-        HttpHeaders.contentTypeHeader: 'application/json',
-        HttpHeaders.acceptHeader: 'application/json',
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
       };
 
   Future<Map<String, dynamic>> _get(String path) async {
