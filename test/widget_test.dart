@@ -1,30 +1,59 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:pulso_app/core/skeleton.dart';
+import 'package:pulso_app/features/coach/controllers/coach_controller.dart';
+import 'package:pulso_app/features/coach/services/coach_mock_service.dart';
 import 'package:pulso_app/main.dart';
 
+Future<void> _loadFonts() async {
+  final barlow = FontLoader('Barlow')
+    ..addFont(rootBundle.load('assets/fonts/Barlow-Regular.ttf'))
+    ..addFont(rootBundle.load('assets/fonts/Barlow-SemiBold.ttf'));
+  final condensed = FontLoader('BarlowCondensed')
+    ..addFont(rootBundle.load('assets/fonts/BarlowCondensed-ExtraBold.ttf'));
+  await Future.wait([barlow.load(), condensed.load()]);
+}
+
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  setUpAll(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    await _loadFonts();
+  });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+  testWidgets('Inicio muestra skeletons y luego los datos del socio', (tester) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.pumpWidget(const AppRoot());
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // REGLA 1: mientras carga se ven skeletons, no spinners.
+    expect(find.byType(SkeletonScope), findsWidgets);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    // Los servicios mock responden en 250 ms y en paralelo.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('HOLA, ALEX'), findsOneWidget);
+    expect(find.text('Carlos Méndez'), findsOneWidget);
+    expect(find.byType(SkeletonScope), findsNothing);
+  });
+
+  test('CoachController espera 300 ms y 2 letras antes de buscar', () async {
+    final c = CoachController(const CoachMockService(latency: Duration.zero));
+    await c.load();
+
+    c.onQueryChanged('p'); // 1 letra: no busca
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    expect(c.searching, isFalse);
+
+    c.onQueryChanged('pre');
+    c.onQueryChanged('press');
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    expect(c.available.every((e) => e.name.toLowerCase().contains('press')), isTrue);
+
+    c.dispose();
   });
 }
