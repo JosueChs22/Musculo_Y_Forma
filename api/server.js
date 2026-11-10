@@ -25,7 +25,7 @@ const corsOrigin = corsEnv.trim() === '*'
 const corsOptions = {
   origin: corsOrigin,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
 };
 
 // Responder preflight OPTIONS en todas las rutas (necesario para POST/PUT/PATCH desde el navegador)
