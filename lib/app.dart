@@ -8,6 +8,7 @@ import 'features/admin/views/usuarios_view.dart';
 import 'features/auth/controllers/auth_controller.dart';
 import 'features/auth/models/usuario.dart';
 import 'features/auth/views/login_view.dart';
+import 'features/auth/views/recuperar_view.dart';
 import 'features/coach/views/coach_view.dart';
 import 'features/inicio/views/inicio_view.dart';
 import 'features/perfil/views/perfil_view.dart';
@@ -30,14 +31,17 @@ GoRouter buildRouter(AuthController auth) => GoRouter(
       refreshListenable: auth,
       redirect: (context, state) {
         final ruta = state.matchedLocation;
-        if (!auth.autenticado) return ruta == '/login' ? null : '/login';
-        if (ruta == '/login') return '/';
+        // Sin sesión solo se puede estar en el login o recuperando la contraseña
+        final publica = ruta == '/login' || ruta == '/recuperar';
+        if (!auth.autenticado) return publica ? null : '/login';
+        if (publica) return '/';
         final permitidos = _rolesPorRuta[ruta];
         if (permitidos != null && !permitidos.contains(auth.usuario!.rol)) return '/';
         return null;
       },
       routes: [
         GoRoute(path: '/login', pageBuilder: (c, s) => _page(const LoginView())),
+        GoRoute(path: '/recuperar', pageBuilder: (c, s) => _page(const RecuperarView())),
         ShellRoute(
           builder: (context, state, child) => AppShell(location: state.uri.path, child: child),
           routes: [

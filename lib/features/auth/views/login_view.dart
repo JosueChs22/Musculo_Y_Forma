@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/brand.dart';
@@ -90,7 +91,15 @@ class _LoginViewState extends State<LoginView> {
                         style: ts(14, weight: kSemi, color: AppColors.danger),
                       ),
                     ],
-                    const SizedBox(height: 24),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: auth.enviando ? null : () => context.go('/recuperar'),
+                        child: Text('¿Olvidó su contraseña?',
+                            style: ts(14, weight: kSemi, color: AppColors.cobalto)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     FilledButton(
                       onPressed: auth.enviando ? null : _enviar,
                       style: FilledButton.styleFrom(

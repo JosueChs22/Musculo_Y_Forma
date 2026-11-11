@@ -65,6 +65,24 @@ function validarCambioContrasena(b = {}) {
   return errors;
 }
 
+// RF-034, paso 1: solo el correo
+function validarRecuperacion(b = {}) {
+  const errors = [];
+  if (!RE_CORREO.test(texto(b.correo)) || texto(b.correo).length > 100)
+    errors.push('correo: correo electrónico válido requerido');
+  return errors;
+}
+
+// RF-034, paso 2: correo + código de 6 dígitos + contraseña nueva
+function validarRestablecer(b = {}) {
+  const errors = validarRecuperacion(b);
+  if (!/^\d{6}$/.test(texto(b.codigo)))
+    errors.push('codigo: debe tener 6 dígitos');
+  if (!contrasenaValida(b.contrasena_nueva))
+    errors.push(`contrasena_nueva: ${MSG_POLITICA}`);
+  return errors;
+}
+
 // ¿Es un ObjectId de Mongo? (24 caracteres hexadecimales)
 function esIdValido(id) {
   return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
@@ -75,5 +93,7 @@ module.exports = {
   validarLogin,
   validarNuevoUsuario,
   validarCambioContrasena,
+  validarRecuperacion,
+  validarRestablecer,
   esIdValido,
 };

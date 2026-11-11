@@ -5,26 +5,22 @@ const { requerirAuth } = require('../middleware/auth');
 
 const router = Router();
 
-// Límite más estricto para el login: 10 intentos / 15 min por IP
-const limitarLogin = rateLimit({
+// Límites más estrictos que el general (100 / 15 min por IP) para lo sensible
+const limitar = (max) => rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Demasiados intentos, intenta en 15 minutos' },
 });
 
-// Con un token robado también se podría intentar adivinar la contraseña actual,
-// así que este endpoint lleva su propio límite de intentos.
-const limitarCambio = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Demasiados intentos, intenta en 15 minutos' },
-});
+router.post('/login', limitar(10), ctrl.login);
 
-router.post('/login', limitarLogin, ctrl.login);
-router.post('/cambiar-contrasena', requerirAuth, limitarCambio, ctrl.cambiarContrasena);
+// Con un token robado también se podría intentar adivinar la contraseña actual
+router.post('/cambiar-contrasena', requerirAuth, limitar(10), ctrl.cambiarContrasena);
+
+// Recuperación (públicas, no hay sesión): pedir código y usarlo
+router.post('/recuperar', limitar(5), ctrl.recuperar);
+router.post('/restablecer', limitar(10), ctrl.restablecer);
 
 module.exports = router;

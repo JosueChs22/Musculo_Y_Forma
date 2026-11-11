@@ -16,6 +16,11 @@ class AuthController extends BaseController {
   bool _cambiando = false;
   String? _errorCambio;
 
+  bool _recuperando = false;
+  String? _errorRecuperacion;
+
+  bool get recuperando => _recuperando;
+  String? get errorRecuperacion => _errorRecuperacion;
   bool get cambiando => _cambiando;
   String? get errorCambio => _errorCambio;
   Usuario? get usuario => _usuario;
@@ -77,6 +82,47 @@ class AuthController extends BaseController {
 
   /// Se llama al abrir el formulario para no mostrar el error de un intento anterior.
   void limpiarErrorCambio() => _errorCambio = null;
+
+  /// RF-034, paso 1. Devuelve true si la solicitud se envió (no confirma que el correo exista).
+  Future<bool> solicitarRecuperacion(String correo) =>
+      _recuperar(() => _service.solicitarRecuperacion(correo.trim()));
+
+  /// RF-034, paso 2. Devuelve true si la contraseña se restableció.
+  Future<bool> restablecerContrasena({
+    required String correo,
+    required String codigo,
+    required String nueva,
+  }) =>
+      _recuperar(() => _service.restablecerContrasena(
+            correo: correo.trim(),
+            codigo: codigo.trim(),
+            nueva: nueva,
+          ));
+
+  /// Se llama al abrir la pantalla para no mostrar el error de un intento anterior.
+  void limpiarErrorRecuperacion() => _errorRecuperacion = null;
+
+  // Los dos pasos de la recuperación comparten el mismo manejo de estado y errores
+  Future<bool> _recuperar(Future<void> Function() accion) async {
+    if (_recuperando) return false; // evita doble clic (REGLA 8)
+    _recuperando = true;
+    _errorRecuperacion = null;
+    notify();
+    try {
+      await accion();
+      return true;
+    } on AuthException catch (e) {
+      _errorRecuperacion = e.mensaje;
+      return false;
+    } catch (e) {
+      debugPrint('Error inesperado en la recuperación de contraseña: $e');
+      _errorRecuperacion = 'No se pudo completar la solicitud. Inténtalo de nuevo.';
+      return false;
+    } finally {
+      _recuperando = false;
+      notify();
+    }
+  }
 
   void cerrarSesion() {
     _service.cerrarSesion();

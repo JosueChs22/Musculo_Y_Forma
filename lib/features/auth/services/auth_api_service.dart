@@ -74,6 +74,32 @@ class AuthApiService implements AuthService {
   }
 
   @override
+  Future<void> solicitarRecuperacion(String correo) async {
+    await _enviar(
+      () => _client.post(
+        Uri.parse('$kApiBase/auth/recuperar'),
+        headers: const {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: jsonEncode({'correo': correo}),
+      ),
+    );
+  }
+
+  @override
+  Future<void> restablecerContrasena({
+    required String correo,
+    required String codigo,
+    required String nueva,
+  }) async {
+    await _enviar(
+      () => _client.post(
+        Uri.parse('$kApiBase/auth/restablecer'),
+        headers: const {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: jsonEncode({'correo': correo, 'codigo': codigo, 'contrasena_nueva': nueva}),
+      ),
+    );
+  }
+
+  @override
   void cerrarSesion() => ApiSession.token = null;
 
   // Si el servidor devuelve algo que no es JSON, no reventamos: devolvemos vacío.

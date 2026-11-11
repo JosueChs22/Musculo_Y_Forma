@@ -1,6 +1,8 @@
 const service = require('../services/auth.service');
 const { usuarioDto } = require('../views/usuario.dto');
-const { validarLogin, validarCambioContrasena } = require('../models/usuario.model');
+const {
+  validarLogin, validarCambioContrasena, validarRecuperacion, validarRestablecer,
+} = require('../models/usuario.model');
 
 async function login(req, res, next) {
   try {
@@ -38,4 +40,33 @@ async function cambiarContrasena(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { login, cambiarContrasena };
+// RF-034, paso 1. Responde lo mismo exista o no el correo, y el envío sigue en
+// segundo plano: así ni el mensaje ni el tiempo de respuesta delatan qué correos existen.
+async function recuperar(req, res, next) {
+  try {
+    const errors = validarRecuperacion(req.body);
+    if (errors.length) return res.status(422).json({ errors });
+
+    service.solicitarRecuperacion(req.body.correo)
+      .catch((err) => console.error('Error en la recuperación de contraseña:', err.message));
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+}
+
+// RF-034, paso 2
+async function restablecer(req, res, next) {
+  try {
+    const errors = validarRestablecer(req.body);
+    if (errors.length) return res.status(422).json({ errors });
+
+    const r = await service.restablecerContrasena(
+      req.body.correo, req.body.codigo, req.body.contrasena_nueva,
+    );
+    if (r.motivo === 'invalido')
+      return res.status(400).json({ error: 'El código es inválido o ya venció' });
+
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+}
+
+module.exports = { login, cambiarContrasena, recuperar, restablecer };
