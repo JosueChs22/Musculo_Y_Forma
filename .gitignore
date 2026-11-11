@@ -46,3 +46,16 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Backend Node.js
+backend/node_modules/
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Imágenes subidas por usuarios
+backend/uploads/
+
+# Archivos locales
+*.log
+.DS_Store
