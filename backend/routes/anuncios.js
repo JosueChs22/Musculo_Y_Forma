@@ -12,7 +12,10 @@ const uploadDir = path.join(__dirname, '..', 'uploads');
 
 fs.mkdirSync(uploadDir, { recursive: true });
 
-// Configuración para subir imágenes
+// ==========================================
+// CONFIGURACIÓN DE IMÁGENES
+// ==========================================
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadDir),
@@ -33,7 +36,6 @@ const upload = multer({
   }
 });
 
-// Eliminar una imagen temporal si ocurre un error
 const borrarArchivo = (file) => {
   if (file?.path) {
     fs.unlink(file.path, () => {});
@@ -49,22 +51,30 @@ router.post('/', upload.single('imagen'), async (req, res) => {
     const {
       titulo,
       contenido,
-      categoria,
-      fechaPublicacion,
-      fechaFinalizacion
+      clasificacion,
+      fecha_publicacion,
+      fecha_fin
     } = req.body;
 
-    if (![titulo, contenido, categoria, fechaPublicacion, fechaFinalizacion]
+    if (![titulo, contenido, fecha_publicacion, fecha_fin]
       .every(v => typeof v === 'string' && v.trim())) {
       borrarArchivo(req.file);
 
       return res.status(400).json({
-        mensaje: 'Complete título, contenido, categoría y fechas'
+        mensaje: 'Complete título, contenido y fechas'
       });
     }
 
-    const inicio = new Date(fechaPublicacion);
-    const fin = new Date(fechaFinalizacion);
+    if (clasificacion !== undefined &&
+        (typeof clasificacion !== 'string' || !clasificacion.trim())) {
+      borrarArchivo(req.file);
+      return res.status(400).json({
+        mensaje: 'La clasificación no es válida'
+      });
+    }
+
+    const inicio = new Date(fecha_publicacion);
+    const fin = new Date(fecha_fin);
 
     if (
       Number.isNaN(inicio.getTime()) ||
@@ -81,9 +91,10 @@ router.post('/', upload.single('imagen'), async (req, res) => {
     const anuncio = await Anuncio.create({
       titulo: titulo.trim(),
       contenido: contenido.trim(),
-      categoria: categoria.trim(),
-      fechaPublicacion: inicio,
-      fechaFinalizacion: fin,
+      clasificacion: clasificacion?.trim() || null,
+      fecha_publicacion: inicio,
+      fecha_fin: fin,
+      estado: 'Activo',
       imagen: req.file ? `/uploads/${req.file.filename}` : null
     });
 
@@ -96,7 +107,9 @@ router.post('/', upload.single('imagen'), async (req, res) => {
     borrarArchivo(req.file);
 
     if (error.name === 'ValidationError') {
-      return res.status(400).json({ mensaje: error.message });
+      return res.status(400).json({
+        mensaje: error.message
+      });
     }
 
     console.error('Error al crear anuncio:', error);
@@ -117,9 +130,12 @@ router.get('/publicados', async (_req, res) => {
 
     const anuncios = await Anuncio.find({
       estado: 'Activo',
-      fechaPublicacion: { $lte: ahora },
-      fechaFinalizacion: { $gte: ahora }
-    }).sort({ fechaPublicacion: -1 });
+      fecha_publicacion: { $lte: ahora },
+      $or: [
+        { fecha_fin: { $gte: ahora } },
+        { fecha_fin: null }
+      ]
+    }).sort({ fecha_publicacion: -1 });
 
     res.json(anuncios);
 
@@ -139,7 +155,7 @@ router.get('/publicados', async (_req, res) => {
 router.get('/', async (_req, res) => {
   try {
     const anuncios = await Anuncio.find()
-      .sort({ fechaCreacion: -1 });
+      .sort({ fecha_publicacion: -1 });
 
     res.json(anuncios);
 
@@ -160,7 +176,6 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validar el identificador de MongoDB
     if (!mongoose.isObjectIdOrHexString(id)) {
       borrarArchivo(req.file);
 
@@ -182,36 +197,44 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
     const {
       titulo,
       contenido,
-      categoria,
-      fechaPublicacion,
-      fechaFinalizacion
+      clasificacion,
+      fecha_publicacion,
+      fecha_fin
     } = req.body;
 
-    // Validar campos de texto cuando se envían
-    for (const valor of [titulo, contenido, categoria]) {
+    // Validar campos de texto
+    for (const valor of [titulo, contenido]) {
       if (valor !== undefined &&
           (typeof valor !== 'string' || !valor.trim())) {
         borrarArchivo(req.file);
 
         return res.status(400).json({
-          mensaje: 'Los campos de texto no pueden estar vacíos'
+          mensaje: 'El título y contenido no pueden estar vacíos'
         });
       }
     }
 
-    // Validar las fechas antes de modificar el anuncio
-    const inicio = fechaPublicacion !== undefined
-      ? new Date(fechaPublicacion)
-      : anuncio.fechaPublicacion;
+    if (clasificacion !== undefined &&
+        (typeof clasificacion !== 'string' || !clasificacion.trim())) {
+      borrarArchivo(req.file);
 
-    const fin = fechaFinalizacion !== undefined
-      ? new Date(fechaFinalizacion)
-      : anuncio.fechaFinalizacion;
+      return res.status(400).json({
+        mensaje: 'La clasificación no es válida'
+      });
+    }
+
+    const inicio = fecha_publicacion !== undefined
+      ? new Date(fecha_publicacion)
+      : anuncio.fecha_publicacion;
+
+    const fin = fecha_fin !== undefined
+      ? new Date(fecha_fin)
+      : anuncio.fecha_fin;
 
     if (
       Number.isNaN(inicio.getTime()) ||
-      Number.isNaN(fin.getTime()) ||
-      fin < inicio
+      (fin && Number.isNaN(fin.getTime())) ||
+      (fin && fin < inicio)
     ) {
       borrarArchivo(req.file);
 
@@ -220,13 +243,14 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
       });
     }
 
-    // Actualizar información
     if (titulo !== undefined) anuncio.titulo = titulo.trim();
     if (contenido !== undefined) anuncio.contenido = contenido.trim();
-    if (categoria !== undefined) anuncio.categoria = categoria.trim();
+    if (clasificacion !== undefined) {
+      anuncio.clasificacion = clasificacion.trim();
+    }
 
-    anuncio.fechaPublicacion = inicio;
-    anuncio.fechaFinalizacion = fin;
+    anuncio.fecha_publicacion = inicio;
+    anuncio.fecha_fin = fin;
 
     const imagenAnterior = anuncio.imagen;
 
@@ -234,17 +258,12 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
       anuncio.imagen = `/uploads/${req.file.filename}`;
     }
 
-    // Registrar fecha de actualización
-    anuncio.fechaActualizacion = new Date();
-
     await anuncio.save();
 
-    // Eliminar imagen antigua si fue reemplazada
+    // Eliminar imagen anterior después de guardar
     if (req.file && imagenAnterior?.startsWith('/uploads/')) {
-      const nombreAnterior = path.basename(imagenAnterior);
-
       fs.unlink(
-        path.join(uploadDir, nombreAnterior),
+        path.join(uploadDir, path.basename(imagenAnterior)),
         () => {}
       );
     }
@@ -272,21 +291,19 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
 });
 
 // ==========================================
- // GYM-77 / RF-027: INHABILITAR ANUNCIOS
- // ==========================================
+// GYM-77 / RF-027: INHABILITAR ANUNCIOS
+// ==========================================
 
 router.patch('/:id/inhabilitar', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validar ID de MongoDB
     if (!mongoose.isObjectIdOrHexString(id)) {
       return res.status(400).json({
         mensaje: 'El ID del anuncio no es válido'
       });
     }
 
-    // Buscar anuncio
     const anuncio = await Anuncio.findById(id);
 
     if (!anuncio) {
@@ -295,16 +312,14 @@ router.patch('/:id/inhabilitar', async (req, res) => {
       });
     }
 
-    // Evitar inhabilitar dos veces
     if (anuncio.estado === 'Inhabilitado') {
       return res.status(409).json({
-        mensaje: 'El anuncio ya se encuentra inhabilitado'
+        mensaje: 'El anuncio ya está inhabilitado'
       });
     }
 
-    // Inhabilitación lógica
+    // Cambiar estado sin eliminar el documento
     anuncio.estado = 'Inhabilitado';
-    anuncio.fechaActualizacion = new Date();
 
     await anuncio.save();
 
@@ -323,7 +338,7 @@ router.patch('/:id/inhabilitar', async (req, res) => {
 });
 
 // ==========================================
-// MANEJO DE ERRORES DE IMÁGENES
+// MANEJO DE ERRORES DE ARCHIVOS
 // ==========================================
 
 router.use((err, _req, res, _next) => {
