@@ -6,6 +6,16 @@ const RE_USUARIO = /^[A-Za-z0-9._-]{3,30}$/;
 
 const texto = (v) => (typeof v === 'string' ? v.trim() : '');
 
+// Política de contraseña (la misma que valida la app): 8+ caracteres, sin
+// espacios, con al menos una letra y un número. Máximo 72: bcrypt ignora lo
+// que pase de ahí.
+function contrasenaValida(c) {
+  return typeof c === 'string' && c.length >= 8 && c.length <= 72 &&
+    !/\s/.test(c) && /[A-Za-z]/.test(c) && /\d/.test(c);
+}
+
+const MSG_POLITICA = '8 a 72 caracteres, sin espacios, con al menos una letra y un número';
+
 function validarLogin(body) {
   const errors = [];
   if (!body.usuario || typeof body.usuario !== 'string' || !body.usuario.trim())
@@ -37,14 +47,21 @@ function validarNuevoUsuario(b = {}) {
     errors.push('rol: debe ser Secretaria o Entrenador');
   if (!RE_USUARIO.test(texto(b.usuario)))
     errors.push('usuario: de 3 a 30 caracteres (letras, números, punto, guion o guion bajo)');
+  if (!contrasenaValida(b.contrasena))
+    errors.push(`contrasena: ${MSG_POLITICA}`);
 
-  // Misma política que la app: 8+ caracteres, sin espacios, con letra y número
-  // (máximo 72: bcrypt ignora lo que pase de ahí)
-  const c = b.contrasena;
-  if (typeof c !== 'string' || c.length < 8 || c.length > 72 || /\s/.test(c) ||
-      !/[A-Za-z]/.test(c) || !/\d/.test(c))
-    errors.push('contrasena: 8 a 72 caracteres, sin espacios, con al menos una letra y un número');
+  return errors;
+}
 
+// RF-035: valida el cuerpo (snake_case) para cambiar la contraseña
+function validarCambioContrasena(b = {}) {
+  const errors = [];
+  if (typeof b.contrasena_actual !== 'string' || !b.contrasena_actual)
+    errors.push('contrasena_actual: requerida');
+  if (!contrasenaValida(b.contrasena_nueva))
+    errors.push(`contrasena_nueva: ${MSG_POLITICA}`);
+  else if (b.contrasena_nueva === b.contrasena_actual)
+    errors.push('contrasena_nueva: debe ser distinta a la actual');
   return errors;
 }
 
@@ -53,4 +70,10 @@ function esIdValido(id) {
   return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
 }
 
-module.exports = { ROLES_ADMINISTRATIVOS, validarLogin, validarNuevoUsuario, esIdValido };
+module.exports = {
+  ROLES_ADMINISTRATIVOS,
+  validarLogin,
+  validarNuevoUsuario,
+  validarCambioContrasena,
+  esIdValido,
+};

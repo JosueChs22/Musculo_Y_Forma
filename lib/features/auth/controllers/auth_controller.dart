@@ -13,7 +13,11 @@ class AuthController extends BaseController {
   Usuario? _usuario;
   bool _enviando = false;
   String? _errorLogin;
+  bool _cambiando = false;
+  String? _errorCambio;
 
+  bool get cambiando => _cambiando;
+  String? get errorCambio => _errorCambio;
   Usuario? get usuario => _usuario;
   bool get autenticado => _usuario != null;
   bool get enviando => _enviando;
@@ -48,6 +52,31 @@ class AuthController extends BaseController {
       notify(); // al cambiar _usuario, el router redirige solo
     }
   }
+
+  /// RF-035. Devuelve true si se cambió. Si falla, deja el mensaje en [errorCambio].
+  Future<bool> cambiarContrasena(String actual, String nueva) async {
+    if (_cambiando) return false; // evita doble clic (REGLA 8)
+    _cambiando = true;
+    _errorCambio = null;
+    notify();
+    try {
+      await _service.cambiarContrasena(actual: actual, nueva: nueva);
+      return true;
+    } on AuthException catch (e) {
+      _errorCambio = e.mensaje;
+      return false;
+    } catch (e) {
+      debugPrint('Error inesperado al cambiar contraseña: $e');
+      _errorCambio = 'No se pudo cambiar la contraseña. Inténtalo de nuevo.';
+      return false;
+    } finally {
+      _cambiando = false;
+      notify();
+    }
+  }
+
+  /// Se llama al abrir el formulario para no mostrar el error de un intento anterior.
+  void limpiarErrorCambio() => _errorCambio = null;
 
   void cerrarSesion() {
     _service.cerrarSesion();

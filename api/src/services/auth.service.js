@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { ObjectId } = require('mongodb');
 const { getDb } = require('../config/db');
 
 // Si el usuario no existe se compara igual contra este hash, para que la
@@ -38,4 +39,21 @@ function firmarToken(u, rol) {
   });
 }
 
-module.exports = { autenticar, firmarToken };
+// RF-035. Devuelve { ok: true } o { motivo: 'no_autorizado' | 'actual_incorrecta' }
+async function cambiarContrasena(idUsuario, actual, nueva) {
+  const db = getDb();
+  const u = await db.collection('usuarios')
+    .findOne({ _id: new ObjectId(idUsuario) }, { projection: { contrasena: 1, estado: 1 } });
+  if (!u || u.estado !== 'Activo') return { motivo: 'no_autorizado' };
+
+  if (!(await bcrypt.compare(actual, u.contrasena))) return { motivo: 'actual_incorrecta' };
+
+  await db.collection('usuarios').updateOne({ _id: u._id }, {
+    $set: { contrasena: await bcrypt.hash(nueva, 10) }, // nunca en texto plano
+    // Auditoría: queda registrado que cambió, sin guardar ningún valor de contraseña
+    $push: { historial_cambios: { fecha: new Date(), campo: 'contrasena', realizado_por: u._id } },
+  });
+  return { ok: true };
+}
+
+module.exports = { autenticar, firmarToken, cambiarContrasena };

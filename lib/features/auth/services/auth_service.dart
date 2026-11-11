@@ -15,5 +15,8 @@ abstract class AuthService {
   /// Inicia sesión. Lanza [AuthException] si falla.
   Future<Usuario> iniciarSesion({required String usuario, required String contrasena});
 
+  /// RF-035. Lanza [AuthException] si la contraseña actual es incorrecta o falla algo más.
+  Future<void> cambiarContrasena({required String actual, required String nueva});
+
   void cerrarSesion();
 }

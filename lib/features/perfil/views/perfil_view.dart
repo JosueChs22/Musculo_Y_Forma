@@ -7,6 +7,7 @@ import '../../../core/theme.dart';
 import '../../../core/widgets.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../auth/models/usuario.dart';
+import '../../auth/views/widgets/cambiar_contrasena_dialog.dart';
 import '../controllers/perfil_controller.dart';
 import '../models/user_profile.dart';
 
@@ -55,6 +56,23 @@ class PerfilView extends StatelessWidget {
           ),
           gapAfter: 12,
         ),
+      // RF-035: cambiar la contraseña de la cuenta con sesión iniciada
+      Box(
+        SecondaryButton(
+          label: 'Cambiar contraseña',
+          icon: Icons.lock_outline,
+          onPressed: () {
+            final auth = context.read<AuthController>();
+            auth.limpiarErrorCambio();
+            showDialog<void>(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => CambiarContrasenaDialog(controller: auth),
+            );
+          },
+        ),
+        gapAfter: 12,
+      ),
       // Cerrar sesión: al limpiar la sesión, el router redirige solo a /login.
       Box(
         OutlinedButton.icon(
