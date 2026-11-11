@@ -7,4 +7,9 @@ function validarLogin(body) {
   return errors;
 }
 
-module.exports = { validarLogin };
+// ¿Es un ObjectId de Mongo? (24 caracteres hexadecimales)
+function esIdValido(id) {
+  return typeof id === 'string' && /^[0-9a-fA-F]{24}$/.test(id);
+}
+
+module.exports = { validarLogin, esIdValido };

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../../core/widgets.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../../auth/models/usuario.dart';
 import '../controllers/perfil_controller.dart';
 import '../models/user_profile.dart';
 
@@ -17,6 +19,7 @@ class PerfilView extends StatelessWidget {
     final loading = context.select<PerfilController, bool>((c) => c.loading);
     final error = context.select<PerfilController, String?>((c) => c.error);
     final p = context.select<PerfilController, UserProfile>((c) => c.profile);
+    final esAdmin = context.select<AuthController, bool>((c) => c.usuario?.rol == RolUsuario.administrador);
 
     return SliverPage(slivers: [
       const Box(PageTitle(eyebrow: 'Tu cuenta', title: 'Perfil'), gapAfter: 24),
@@ -41,6 +44,16 @@ class PerfilView extends StatelessWidget {
             ]),
           ),
           gapAfter: 16,
+        ),
+      // Acceso al panel del Administrador (solo se muestra a ese rol)
+      if (esAdmin)
+        Box(
+          SecondaryButton(
+            label: 'Panel de administración',
+            icon: Icons.admin_panel_settings_outlined,
+            onPressed: () => context.go('/admin'),
+          ),
+          gapAfter: 12,
         ),
       // Cerrar sesión: al limpiar la sesión, el router redirige solo a /login.
       Box(

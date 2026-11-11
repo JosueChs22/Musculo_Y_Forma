@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'app.dart';
+import 'features/admin/controllers/usuarios_controller.dart';
+import 'features/admin/services/usuarios_api_service.dart';
+import 'features/admin/services/usuarios_service.dart';
 import 'features/auth/controllers/auth_controller.dart';
 import 'features/auth/services/auth_api_service.dart';
 import 'features/auth/services/auth_service.dart';
@@ -39,6 +42,8 @@ class AppServices {
   ClasesService get clases => ClasesApiService();
 
   AuthService get auth => AuthApiService();
+
+  UsuariosService get usuarios => UsuariosApiService();
 }
 
 void main() => runApp(const AppRoot());
@@ -56,6 +61,8 @@ class AppRoot extends StatelessWidget {
       providers: [
         // Sesión del usuario (login). El router la usa para proteger las rutas.
         ChangeNotifierProvider(create: (_) => AuthController(services.auth)..load()),
+        // Panel del Administrador: la vista llama a load() al abrirse (necesita token).
+        ChangeNotifierProvider(create: (_) => UsuariosController(services.usuarios)),
         ChangeNotifierProvider(create: (_) => PerfilController(services.perfil)..load()),
         ChangeNotifierProvider(create: (_) => RutinasController(services.rutinas)..load()),
         ChangeNotifierProvider(create: (_) => ProgresoController(services.progreso)..load()),

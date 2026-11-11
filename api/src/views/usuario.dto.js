@@ -16,4 +16,12 @@ function usuarioDto(doc, rol) {
   };
 }
 
-module.exports = { usuarioDto };
+// items: [{ doc, rol }]
+function paginadoUsuariosDto(items, nextCursor) {
+  return {
+    data: items.map(({ doc, rol }) => usuarioDto(doc, rol)),
+    nextCursor: nextCursor ?? null,
+  };
+}
+
+module.exports = { usuarioDto, paginadoUsuariosDto };

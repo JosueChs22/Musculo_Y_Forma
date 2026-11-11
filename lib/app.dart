@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'core/app_shell.dart';
 import 'core/theme.dart';
+import 'features/admin/views/usuarios_view.dart';
 import 'features/auth/controllers/auth_controller.dart';
 import 'features/auth/models/usuario.dart';
 import 'features/auth/views/login_view.dart';
@@ -21,6 +22,7 @@ Page<void> _page(Widget child) => NoTransitionPage<void>(child: child);
 const _rolesPorRuta = <String, Set<RolUsuario>>{
   '/secretaria': {RolUsuario.secretaria, RolUsuario.administrador},
   '/coach': {RolUsuario.entrenador, RolUsuario.administrador},
+  '/admin': {RolUsuario.administrador},
 };
 
 GoRouter buildRouter(AuthController auth) => GoRouter(
@@ -45,6 +47,7 @@ GoRouter buildRouter(AuthController auth) => GoRouter(
             GoRoute(path: '/perfil', pageBuilder: (c, s) => _page(const PerfilView())),
             GoRoute(path: '/coach', pageBuilder: (c, s) => _page(const CoachView())),
             GoRoute(path: '/secretaria', pageBuilder: (c, s) => _page(const SecretariaView())),
+            GoRoute(path: '/admin', pageBuilder: (c, s) => _page(const UsuariosView())),
           ],
         ),
       ],
