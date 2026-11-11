@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'app.dart';
+import 'features/auth/controllers/auth_controller.dart';
+import 'features/auth/services/auth_api_service.dart';
+import 'features/auth/services/auth_service.dart';
 import 'features/coach/controllers/coach_controller.dart';
 import 'features/coach/services/coach_mock_service.dart';
 import 'features/coach/services/coach_service.dart';
@@ -34,6 +37,8 @@ class AppServices {
   final CoachService coach;
 
   ClasesService get clases => ClasesApiService();
+
+  AuthService get auth => AuthApiService();
 }
 
 void main() => runApp(const AppRoot());
@@ -49,6 +54,8 @@ class AppRoot extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Sesión del usuario (login). El router la usa para proteger las rutas.
+        ChangeNotifierProvider(create: (_) => AuthController(services.auth)..load()),
         ChangeNotifierProvider(create: (_) => PerfilController(services.perfil)..load()),
         ChangeNotifierProvider(create: (_) => RutinasController(services.rutinas)..load()),
         ChangeNotifierProvider(create: (_) => ProgresoController(services.progreso)..load()),

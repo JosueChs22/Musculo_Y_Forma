@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import 'core/app_shell.dart';
 import 'core/theme.dart';
+import 'features/auth/controllers/auth_controller.dart';
+import 'features/auth/models/usuario.dart';
+import 'features/auth/views/login_view.dart';
 import 'features/coach/views/coach_view.dart';
 import 'features/inicio/views/inicio_view.dart';
 import 'features/perfil/views/perfil_view.dart';
@@ -12,8 +16,26 @@ import 'features/secretaria/views/secretaria_view.dart';
 
 Page<void> _page(Widget child) => NoTransitionPage<void>(child: child);
 
-GoRouter buildRouter() => GoRouter(
+/// Rutas restringidas por rol. Es protección de pantalla (UX); la seguridad
+/// real la hace la API validando el token en cada petición.
+const _rolesPorRuta = <String, Set<RolUsuario>>{
+  '/secretaria': {RolUsuario.secretaria, RolUsuario.administrador},
+  '/coach': {RolUsuario.entrenador, RolUsuario.administrador},
+};
+
+GoRouter buildRouter(AuthController auth) => GoRouter(
+      // Cada vez que cambia la sesión (login/logout) se vuelve a evaluar redirect.
+      refreshListenable: auth,
+      redirect: (context, state) {
+        final ruta = state.matchedLocation;
+        if (!auth.autenticado) return ruta == '/login' ? null : '/login';
+        if (ruta == '/login') return '/';
+        final permitidos = _rolesPorRuta[ruta];
+        if (permitidos != null && !permitidos.contains(auth.usuario!.rol)) return '/';
+        return null;
+      },
       routes: [
+        GoRoute(path: '/login', pageBuilder: (c, s) => _page(const LoginView())),
         ShellRoute(
           builder: (context, state, child) => AppShell(location: state.uri.path, child: child),
           routes: [
@@ -37,7 +59,7 @@ class GmyfApp extends StatefulWidget {
 
 class _GmyfAppState extends State<GmyfApp> {
   // El router se crea una sola vez (no en cada build, REGLA 3).
-  late final GoRouter _router = buildRouter();
+  late final GoRouter _router = buildRouter(context.read<AuthController>());
 
   @override
   void dispose() {

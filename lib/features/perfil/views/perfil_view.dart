@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../../core/widgets.dart';
+import '../../auth/controllers/auth_controller.dart';
 import '../controllers/perfil_controller.dart';
 import '../models/user_profile.dart';
 
@@ -41,6 +42,21 @@ class PerfilView extends StatelessWidget {
           ),
           gapAfter: 16,
         ),
+      // Cerrar sesión: al limpiar la sesión, el router redirige solo a /login.
+      Box(
+        OutlinedButton.icon(
+          onPressed: () => context.read<AuthController>().cerrarSesion(),
+          icon: const Icon(Icons.logout),
+          label: Text('Cerrar sesión', style: ts(15, weight: kSemi)),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.indigo,
+            minimumSize: const Size.fromHeight(48),
+            side: const BorderSide(color: AppColors.line),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        gapAfter: 16,
+      ),
       Box(Text('Próximamente: ajustes de cuenta y notificaciones.', style: ts(14, color: AppColors.pizarra))),
     ]);
   }
