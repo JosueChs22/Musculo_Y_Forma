@@ -1,8 +1,7 @@
+const bcrypt = require('bcryptjs');
 const { getDb } = require('../config/db');
 const { ObjectId } = require('mongodb');
-
-// Usuarios "administrativos" = el personal que crea el Administrador (RF-096)
-const ROLES_ADMINISTRATIVOS = ['Secretaria', 'Entrenador'];
+const { ROLES_ADMINISTRATIVOS } = require('../models/usuario.model');
 
 // Solo los campos que la app necesita. Nunca contrasena ni historial_cambios.
 const PROJ = {
@@ -54,4 +53,33 @@ async function obtenerAdministrativo(id) {
   return { doc, rol: rolDoc.descripcion };
 }
 
-module.exports = { listarAdministrativos, obtenerAdministrativo, ROLES_ADMINISTRATIVOS };
+// RF-096. Devuelve { doc, rol } o { duplicado: 'usuario' | 'correo' }
+async function crearAdministrativo(d) {
+  const db = getDb();
+  const rolDoc = await db.collection('roles').findOne({ descripcion: d.rol }, { projection: { _id: 1 } });
+  if (!rolDoc) throw new Error(`El rol "${d.rol}" no existe en la colección roles`);
+
+  const doc = {
+    id_rol: rolDoc._id,
+    correo: d.correo.trim().toLowerCase(), // en minúscula para que no se dupliquen por mayúsculas
+    contrasena: await bcrypt.hash(d.contrasena, 10), // nunca en texto plano
+    nombre: d.nombre.trim(),
+    primer_apellido: d.primer_apellido.trim(),
+    segundo_apellido: d.segundo_apellido?.trim() || null,
+    telefono: d.telefono.trim(),
+    usuario: d.usuario.trim(),
+    estado: 'Activo',
+    fecha_ingreso: new Date(),
+  };
+
+  try {
+    const { insertedId } = await db.collection('usuarios').insertOne(doc);
+    return { doc: { _id: insertedId, ...doc }, rol: d.rol };
+  } catch (err) {
+    // 11000 = índice único violado (uq_usuario o uq_correo). Lo decide Mongo, sin carreras.
+    if (err.code === 11000) return { duplicado: err.keyPattern?.correo ? 'correo' : 'usuario' };
+    throw err;
+  }
+}
+
+module.exports = { listarAdministrativos, obtenerAdministrativo, crearAdministrativo, ROLES_ADMINISTRATIVOS };

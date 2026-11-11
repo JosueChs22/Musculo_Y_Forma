@@ -9,5 +9,6 @@ router.use(requerirAuth, requerirRol('Administrador'));
 
 router.get('/',    ctrl.listar);
 router.get('/:id', ctrl.obtener);
+router.post('/',   ctrl.crear);
 
 module.exports = router;

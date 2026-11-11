@@ -7,6 +7,7 @@ import '../../../core/theme.dart';
 import '../../../core/widgets.dart';
 import '../../auth/models/usuario.dart';
 import '../controllers/usuarios_controller.dart';
+import 'widgets/usuario_form_dialog.dart';
 
 /// Panel del Administrador: lista de secretarias y entrenadores (RF-103).
 class UsuariosView extends StatefulWidget {
@@ -42,7 +43,18 @@ class _UsuariosViewState extends State<UsuariosView> {
           title: 'Usuarios',
           subtitle: 'Secretarias y entrenadores del gimnasio.',
         ),
-        gapAfter: 24,
+        gapAfter: 16,
+      ),
+      Box(
+        Align(
+          alignment: Alignment.centerLeft,
+          child: PrimaryButton(
+            label: 'Nuevo usuario',
+            icon: Icons.person_add_alt_1,
+            onPressed: () => _nuevoUsuario(context),
+          ),
+        ),
+        gapAfter: 16,
       ),
       Box(
         TextField(
@@ -87,6 +99,17 @@ class _UsuariosViewState extends State<UsuariosView> {
         ),
     ]);
   }
+}
+
+/// RF-096: abre el formulario para crear una Secretaria o un Entrenador.
+void _nuevoUsuario(BuildContext context) {
+  final c = context.read<UsuariosController>();
+  c.limpiarErrorCrear();
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false, // no se cierra por accidente a mitad de un formulario
+    builder: (_) => UsuarioFormDialog(controller: c),
+  );
 }
 
 class _FiltroChip extends StatelessWidget {

@@ -40,6 +40,15 @@ class Validators {
         : null;
   }
 
+  /// Nombre de usuario para iniciar sesión (mismo patrón que valida la API).
+  static String? usuario(String? v) {
+    final vacio = requerido(v, 'El usuario');
+    if (vacio != null) return vacio;
+    return RegExp(r'^[A-Za-z0-9._-]{3,30}$').hasMatch(v!.trim())
+        ? null
+        : 'De 3 a 30 caracteres: letras, números, punto, guion o guion bajo';
+  }
+
   /// Teléfono de Costa Rica: 8 dígitos.
   static String? telefono(String? v) {
     final vacio = requerido(v, 'El teléfono');
