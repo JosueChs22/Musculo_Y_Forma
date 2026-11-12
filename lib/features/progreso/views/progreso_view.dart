@@ -49,6 +49,26 @@ class ProgresoView extends StatelessWidget {
       ]);
     }
 
+    if (history.isEmpty) {
+      return SliverPage(slivers: [
+        const Box(_Header(), gapAfter: 24),
+        Box(Panel(
+          child: Row(children: [
+            const Icon(Icons.monitor_weight_outlined, color: AppColors.indigo, size: 32),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Todavía no tienes mediciones', style: ts(16, weight: kSemi)),
+                const SizedBox(height: 2),
+                Text('Tu entrenador registra tu peso y composición corporal en cada evaluación; aquí verás tu evolución.',
+                    style: ts(14, color: AppColors.pizarra)),
+              ]),
+            ),
+          ]),
+        )),
+      ]);
+    }
+
     return SliverPage(slivers: [
       const Box(_Header(), gapAfter: 28),
       const Box(_MetricSelector(), gapAfter: 24),
@@ -92,7 +112,7 @@ class _Header extends StatelessWidget {
         const Expanded(
           child: PageTitle(
             title: 'Mi progreso',
-            subtitle: 'Historial y comparativa de evaluaciones InBody',
+            subtitle: 'Historial y comparativa de tus evaluaciones',
           ),
         ),
         if (MediaQuery.sizeOf(context).width >= 640)
@@ -276,7 +296,7 @@ class _InbodyPanel extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Eyebrow('Composición actual'),
         const SizedBox(height: 6),
-        Text('RESUMEN INBODY', style: display(28)),
+        Text('RESUMEN', style: display(28)),
         const SizedBox(height: 20),
         for (final item in inbody.items)
           Padding(
@@ -335,8 +355,7 @@ class _HistoryHeader extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-        border: Border.all(color: AppColors.line),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(kRadiusCard)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(

@@ -1,46 +1,52 @@
-/// Perfil del socio que usa la app.
+import '../../../core/fechas.dart';
+
+/// Perfil del usuario con sesión: su nombre, su coach, su objetivo y su última medición.
+/// Los datos de la cuenta (rol, correo, teléfono) vienen de la sesión (AuthController).
 class UserProfile {
   const UserProfile({
     required this.name,
-    required this.coachName,
-    required this.goal,
-    required this.streakDays,
-    required this.currentWorkout,
-    required this.weekLabel,
-    required this.lastMeasurementLabel,
+    this.coachName,
+    this.goal,
+    this.lastMeasurement,
+    this.streakDays = 0,
   });
 
   final String name;
-  final String coachName;
-  final String goal;
-  final int streakDays;
-  final String currentWorkout;
-  final String weekLabel;
-  final String lastMeasurementLabel;
 
-  static const empty = UserProfile(
-    name: '',
-    coachName: '',
-    goal: '',
-    streakDays: 0,
-    currentWorkout: '',
-    weekLabel: '',
-    lastMeasurementLabel: '',
-  );
+  /// null si todavía no tiene coach.
+  final String? coachName;
+
+  /// Objetivo registrado en su última medición, o null.
+  final String? goal;
+  final DateTime? lastMeasurement;
+
+  /// Días seguidos entrenando. Aún no se registra en la API: queda en 0 y no se muestra.
+  final int streakDays;
+
+  static const empty = UserProfile(name: '');
 
   String get firstName => name.split(' ').first;
   String get initials => _initials(name);
-  String get coachInitials => _initials(coachName);
+  String get coachInitials => _initials(coachName ?? '');
 
-  factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
-        name: json['name'] as String,
-        coachName: json['coachName'] as String,
-        goal: json['goal'] as String,
-        streakDays: (json['streakDays'] as num).toInt(),
-        currentWorkout: json['currentWorkout'] as String,
-        weekLabel: json['weekLabel'] as String,
-        lastMeasurementLabel: json['lastMeasurementLabel'] as String,
-      );
+  /// "Última medición · 9 nov", o null si no tiene mediciones.
+  String? get lastMeasurementLabel =>
+      lastMeasurement == null ? null : 'Última medición · ${diaMes(lastMeasurement!)}';
+
+  /// Desde GET /mi/perfil.
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
+    final u = json['usuario'] as Map<String, dynamic>;
+    final coach = json['coach'] as Map<String, dynamic>?;
+    return UserProfile(
+      name: [u['nombre'], u['primerApellido'], u['segundoApellido']]
+          .whereType<String>()
+          .where((s) => s.isNotEmpty)
+          .join(' '),
+      coachName: coach?['nombre'] as String?,
+      goal: json['objetivo'] as String?,
+      lastMeasurement: json['ultimaMedicion'] == null ? null : DateTime.parse(json['ultimaMedicion'] as String),
+    );
+  }
 }
 
 String _initials(String fullName) => fullName

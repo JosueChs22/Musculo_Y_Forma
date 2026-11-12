@@ -1,4 +1,4 @@
-/// Ejercicio dentro de una rutina o del catálogo.
+/// Ejercicio dentro de una rutina asignada.
 class Exercise {
   const Exercise({
     required this.name,
@@ -6,6 +6,8 @@ class Exercise {
     required this.reps,
     required this.restSeconds,
     this.coachNote = '',
+    this.imageUrl,
+    this.gifUrl,
   });
 
   final String name;
@@ -14,23 +16,11 @@ class Exercise {
   final int restSeconds;
   final String coachNote;
 
+  /// Miniatura y animación del catálogo (pueden faltar).
+  final String? imageUrl;
+  final String? gifUrl;
+
   String get setsLabel => '$sets series';
   String get restLabel => '$restSeconds s descanso';
   String get summary => '$setsLabel · $reps · $restLabel';
-
-  factory Exercise.fromJson(Map<String, dynamic> json) => Exercise(
-        name: json['name'] as String,
-        sets: (json['sets'] as num).toInt(),
-        reps: json['reps'] as String,
-        restSeconds: (json['restSeconds'] as num).toInt(),
-        coachNote: (json['coachNote'] as String?) ?? '',
-      );
-
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'sets': sets,
-        'reps': reps,
-        'restSeconds': restSeconds,
-        'coachNote': coachNote,
-      };
 }

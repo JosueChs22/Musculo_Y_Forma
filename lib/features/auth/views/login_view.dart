@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/brand.dart';
 import '../../../core/theme.dart';
 import '../../../core/validators.dart';
+import '../../../core/widgets.dart';
 import '../controllers/auth_controller.dart';
 
 class LoginView extends StatefulWidget {
@@ -44,7 +45,10 @@ class _LoginViewState extends State<LoginView> {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
+              child: Panel(
+                padding: const EdgeInsets.all(28),
+                radius: 28,
+                child: Form(
                 key: _form,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -100,23 +104,7 @@ class _LoginViewState extends State<LoginView> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    FilledButton(
-                      onPressed: auth.enviando ? null : _enviar,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.ambar,
-                        foregroundColor: AppColors.ink,
-                        disabledBackgroundColor: AppColors.ambar.withValues(alpha: .6),
-                        minimumSize: const Size.fromHeight(52),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      child: auth.enviando
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.ink),
-                            )
-                          : Text('INGRESAR', style: ts(16, weight: kSemi)),
-                    ),
+                    PrimaryButton(label: 'Ingresar', expand: true, busy: auth.enviando, onPressed: _enviar),
                     if (auth.enviando) ...[
                       const SizedBox(height: 12),
                       Text(
@@ -127,6 +115,7 @@ class _LoginViewState extends State<LoginView> {
                     ],
                   ],
                 ),
+              ),
               ),
             ),
           ),

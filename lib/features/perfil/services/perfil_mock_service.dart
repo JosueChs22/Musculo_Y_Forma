@@ -8,14 +8,11 @@ class PerfilMockService implements PerfilService {
   @override
   Future<UserProfile> getProfile() => Future.delayed(
         latency,
-        () => const UserProfile(
+        () => UserProfile(
           name: 'Alex Rivera',
           coachName: 'Carlos Méndez',
           goal: 'Reducir grasa y ganar fuerza',
-          streakDays: 12,
-          currentWorkout: 'Empuje: pecho y tríceps',
-          weekLabel: 'Semana 3',
-          lastMeasurementLabel: 'Última medición · 18 mayo',
+          lastMeasurement: DateTime(2026, 5, 18),
         ),
       );
 }

@@ -22,6 +22,15 @@ async function login(req, res, next) {
   } catch (err) { next(err); }
 }
 
+// Restaura la sesión guardada en la app: con un token vigente devuelve el usuario.
+async function sesion(req, res, next) {
+  try {
+    const r = await service.obtenerSesion(req.usuario.id);
+    if (!r) return res.status(401).json({ error: 'Sesión inválida o expirada' });
+    res.json({ usuario: usuarioDto(r.usuario, r.rol) });
+  } catch (err) { next(err); }
+}
+
 // RF-035: el usuario sale del token (req.usuario), nunca del cuerpo de la petición
 async function cambiarContrasena(req, res, next) {
   try {
@@ -69,4 +78,4 @@ async function restablecer(req, res, next) {
   } catch (err) { next(err); }
 }
 
-module.exports = { login, cambiarContrasena, recuperar, restablecer };
+module.exports = { login, sesion, cambiarContrasena, recuperar, restablecer };

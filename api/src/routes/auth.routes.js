@@ -16,6 +16,9 @@ const limitar = (max) => rateLimit({
 
 router.post('/login', limitar(10), ctrl.login);
 
+// Restaurar la sesión al reabrir la app (con el token guardado)
+router.get('/sesion', requerirAuth, ctrl.sesion);
+
 // Con un token robado también se podría intentar adivinar la contraseña actual
 router.post('/cambiar-contrasena', requerirAuth, limitar(10), ctrl.cambiarContrasena);
 

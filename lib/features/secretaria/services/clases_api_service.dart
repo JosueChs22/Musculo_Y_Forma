@@ -1,65 +1,16 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
-
+import '../../../core/api_http.dart';
 import '../models/clase.dart';
 import '../models/horario_clase.dart';
 import 'clases_service.dart';
 
-/// Implementación real del servicio: llama a la API en Render.
+/// Implementación real: llama a /clases con el token de la sesión
+/// (ver: cualquier rol; modificar: Secretaria o Administrador).
 class ClasesApiService implements ClasesService {
-  ClasesApiService({http.Client? client}) : _client = client ?? http.Client();
+  ClasesApiService({ApiHttp? http}) : _http = http ?? ApiHttp();
 
-  final http.Client _client;
+  final ApiHttp _http;
 
-  // En web/emulador apunta al API de Render; en tests se puede inyectar otro.
-  static const _base = 'https://musculo-y-forma.onrender.com/api';
-
-  // Render Free hace cold start de ~50 seg; escrituras usan timeout extendido
-  static const _timeout = Duration(seconds: 10);
-  static const _timeoutWrite = Duration(seconds: 60);
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
-
-  Uri _uri(String path) => Uri.parse('$_base$path');
-
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
-
-  Future<Map<String, dynamic>> _get(String path) async {
-    final res = await _client.get(_uri(path), headers: _headers).timeout(_timeout);
-    return _parse(res);
-  }
-
-  Future<Map<String, dynamic>> _post(String path, Map<String, dynamic> body) async {
-    final res = await _client
-        .post(_uri(path), headers: _headers, body: jsonEncode(body))
-        .timeout(_timeoutWrite);
-    return _parse(res);
-  }
-
-  Future<Map<String, dynamic>> _put(String path, Map<String, dynamic> body) async {
-    final res = await _client
-        .put(_uri(path), headers: _headers, body: jsonEncode(body))
-        .timeout(_timeoutWrite);
-    return _parse(res);
-  }
-
-  Future<Map<String, dynamic>> _patch(String path) async {
-    final res = await _client.patch(_uri(path), headers: _headers).timeout(_timeoutWrite);
-    return _parse(res);
-  }
-
-  Map<String, dynamic> _parse(http.Response res) {
-    final body = jsonDecode(res.body) as Map<String, dynamic>;
-    if (res.statusCode >= 400) {
-      final msg = body['error'] as String? ?? 'Error ${res.statusCode}';
-      throw Exception(msg);
-    }
-    return body;
-  }
+  Future<Clase> _obtener(String id) async => Clase.fromJson(await _http.get('/clases/$id'));
 
   // ── Clases ────────────────────────────────────────────────────────────────
 
@@ -70,10 +21,8 @@ class ClasesApiService implements ClasesService {
     String? cursor;
 
     do {
-      final path = cursor == null ? '/clases' : '/clases?cursor=$cursor';
-      final json = await _get(path);
-      final items = (json['data'] as List).map((e) => Clase.fromJson(e as Map<String, dynamic>)).toList();
-      todas.addAll(items);
+      final json = await _http.get('/clases', query: {if (cursor != null) 'cursor': cursor});
+      todas.addAll((json['data'] as List).map((e) => Clase.fromJson(e as Map<String, dynamic>)));
       cursor = json['nextCursor'] as String?;
     } while (cursor != null);
 
@@ -81,61 +30,53 @@ class ClasesApiService implements ClasesService {
   }
 
   @override
-  Future<Clase> crearClase({required String nombre, String? descripcion}) async {
-    final json = await _post('/clases', {'nombre': nombre, 'descripcion': descripcion});
-    return Clase.fromJson(json);
-  }
+  Future<Clase> crearClase({required String nombre, String? descripcion}) async =>
+      Clase.fromJson(await _http.post('/clases', {'nombre': nombre, 'descripcion': descripcion}));
 
   @override
   Future<Clase> actualizarClase(String id, {String? nombre, String? descripcion}) async {
-    await _put('/clases/$id', {'nombre': nombre, 'descripcion': descripcion});
-    // El API devuelve {ok:true}; recargamos la clase actualizada
-    final json = await _get('/clases/$id');
-    return Clase.fromJson(json);
+    // El API devuelve {ok:true}; se recarga la clase actualizada
+    await _http.put('/clases/$id', {'nombre': nombre, 'descripcion': descripcion});
+    return _obtener(id);
   }
 
   @override
   Future<Clase> inhabilitarClase(String id) async {
-    await _patch('/clases/$id/inhabilitar');
-    final json = await _get('/clases/$id');
-    return Clase.fromJson(json);
+    await _http.patch('/clases/$id/inhabilitar');
+    return _obtener(id);
   }
 
   @override
   Future<Clase> reactivarClase(String id) async {
-    await _patch('/clases/$id/reactivar');
-    final json = await _get('/clases/$id');
-    return Clase.fromJson(json);
+    await _http.patch('/clases/$id/reactivar');
+    return _obtener(id);
   }
 
   // ── Horarios ──────────────────────────────────────────────────────────────
 
   @override
   Future<Clase> agregarHorario(String idClase, HorarioClase horario) async {
-    await _post('/clases/$idClase/horarios', {
+    await _http.post('/clases/$idClase/horarios', {
       'dias': horario.dias,
       'hora_inicio': horario.horaInicio,
       'hora_fin': horario.horaFin,
     });
-    final json = await _get('/clases/$idClase');
-    return Clase.fromJson(json);
+    return _obtener(idClase);
   }
 
   @override
   Future<Clase> actualizarHorario(String idClase, int index, HorarioClase horario) async {
-    await _put('/clases/$idClase/horarios/$index', {
+    await _http.put('/clases/$idClase/horarios/$index', {
       'dias': horario.dias,
       'hora_inicio': horario.horaInicio,
       'hora_fin': horario.horaFin,
     });
-    final json = await _get('/clases/$idClase');
-    return Clase.fromJson(json);
+    return _obtener(idClase);
   }
 
   @override
   Future<Clase> inhabilitarHorario(String idClase, int index) async {
-    await _patch('/clases/$idClase/horarios/$index/inhabilitar');
-    final json = await _get('/clases/$idClase');
-    return Clase.fromJson(json);
+    await _http.patch('/clases/$idClase/horarios/$index/inhabilitar');
+    return _obtener(idClase);
   }
 }

@@ -11,8 +11,22 @@ import 'widgets/clase_form_dialog.dart';
 import 'widgets/horario_form_dialog.dart';
 
 /// Panel de la Secretaria: gestión de Clases y Horarios (RF-013/018/023/028 y RF-015/020/025/030).
-class SecretariaView extends StatelessWidget {
+class SecretariaView extends StatefulWidget {
   const SecretariaView({super.key});
+
+  @override
+  State<SecretariaView> createState() => _SecretariaViewState();
+}
+
+class _SecretariaViewState extends State<SecretariaView> {
+  @override
+  void initState() {
+    super.initState();
+    // Se carga al abrir la pantalla: la API necesita el token de la sesión.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<ClasesController>().load();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

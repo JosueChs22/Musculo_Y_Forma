@@ -126,7 +126,8 @@ class _FiltroChip extends StatelessWidget {
         showCheckmark: false,
         backgroundColor: AppColors.card,
         selectedColor: AppColors.indigo,
-        side: const BorderSide(color: AppColors.line),
+        side: BorderSide.none,
+        shape: const StadiumBorder(),
         labelStyle: ts(14, weight: kSemi, color: selected ? Colors.white : AppColors.ink),
       );
 }

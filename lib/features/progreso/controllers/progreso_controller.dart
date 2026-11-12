@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import '../../../core/base_controller.dart';
+import '../../../core/datos_del_usuario.dart';
 import '../models/body_metric.dart';
 import '../models/inbody_summary.dart';
 import '../services/progreso_service.dart';
 
-class ProgresoController extends BaseController {
+class ProgresoController extends BaseController with DatosDelUsuario {
   ProgresoController(this._service);
 
   final ProgresoService _service;
@@ -24,8 +25,11 @@ class ProgresoController extends BaseController {
 
   BodyMetric? get currentMetric => _metrics.isEmpty ? null : _metrics[_selectedMetric];
 
+  /// true si el usuario todavía no tiene ninguna medición.
+  bool get sinMediciones => _history.isEmpty;
+
   @override
-  Future<void> fetch() async {
+  Future<void> cargarDatos() async {
     // REGLA 10: peticiones independientes en paralelo.
     final (metrics, history, inbody) = await (
       _service.getBodyMetrics(),
@@ -36,6 +40,14 @@ class ProgresoController extends BaseController {
     _history = history;
     _inbody = inbody;
     if (_selectedMetric >= _metrics.length) _selectedMetric = 0;
+  }
+
+  @override
+  void limpiar() {
+    _metrics = const [];
+    _history = const [];
+    _inbody = InbodySummary.empty;
+    _selectedMetric = 0;
   }
 
   void selectMetric(int index) {

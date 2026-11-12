@@ -12,7 +12,11 @@ class AuthException implements Exception {
 /// Contrato del servicio de autenticación. La vista y el controlador solo
 /// conocen esta interfaz; la implementación real habla con la API.
 abstract class AuthService {
-  /// Inicia sesión. Lanza [AuthException] si falla.
+  /// Restaura la sesión guardada al abrir la app. Devuelve null si no hay una
+  /// sesión guardada o ya no es válida. No lanza: sin conexión también da null.
+  Future<Usuario?> restaurarSesion();
+
+  /// Inicia sesión y la guarda para la próxima vez. Lanza [AuthException] si falla.
   Future<Usuario> iniciarSesion({required String usuario, required String contrasena});
 
   /// RF-035. Lanza [AuthException] si la contraseña actual es incorrecta o falla algo más.
@@ -30,5 +34,6 @@ abstract class AuthService {
     required String nueva,
   });
 
-  void cerrarSesion();
+  /// Olvida la sesión, también la guardada.
+  Future<void> cerrarSesion();
 }

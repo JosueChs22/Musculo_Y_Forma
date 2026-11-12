@@ -1,12 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
+import '../../../core/api_session.dart';
 import '../../../core/base_controller.dart';
 import '../models/usuario.dart';
 import '../services/auth_service.dart';
 
 /// Estado de la sesión: quién está logueado y el estado del formulario de login.
 class AuthController extends BaseController {
-  AuthController(this._service);
+  AuthController(this._service) {
+    // Si la API rechaza el token mientras se usa la app, se cierra la sesión
+    ApiSession.alExpirar = _sesionExpirada;
+  }
 
   final AuthService _service;
 
@@ -28,10 +34,11 @@ class AuthController extends BaseController {
   bool get enviando => _enviando;
   String? get errorLogin => _errorLogin;
 
-  // Aún no se guarda la sesión en disco, así que al abrir la app no hay nada
-  // que restaurar. Cuando se persista el token, se restaura aquí.
+  /// Al abrir (o recargar) la app se restaura la sesión guardada, si sigue vigente.
   @override
-  Future<void> fetch() async {}
+  Future<void> fetch() async {
+    _usuario = await _service.restaurarSesion();
+  }
 
   /// Devuelve true si el login fue exitoso. Si falla, deja el mensaje en [errorLogin].
   Future<bool> iniciarSesion(String usuario, String contrasena) async {
@@ -125,8 +132,20 @@ class AuthController extends BaseController {
   }
 
   void cerrarSesion() {
-    _service.cerrarSesion();
+    unawaited(_service.cerrarSesion());
     _usuario = null;
-    notify();
+    notify(); // al quedar sin usuario, el router redirige solo a /login
+  }
+
+  void _sesionExpirada() {
+    if (_usuario == null) return;
+    _errorLogin = 'Tu sesión expiró. Inicia sesión de nuevo.';
+    cerrarSesion();
+  }
+
+  @override
+  void dispose() {
+    if (ApiSession.alExpirar == _sesionExpirada) ApiSession.alExpirar = null;
+    super.dispose();
   }
 }

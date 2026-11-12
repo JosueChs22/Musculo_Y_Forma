@@ -39,6 +39,17 @@ async function autenticar(usuario, contrasena) {
   return { usuario: { ...u, ultimo_login: ahora }, rol: rolDoc.descripcion };
 }
 
+// Usuario del token, para restaurar la sesión al reabrir la app.
+// Devuelve { usuario, rol } o null si ya no existe o está inhabilitado.
+async function obtenerSesion(idUsuario) {
+  const db = getDb();
+  const { contrasena, ...proj } = PROJ_LOGIN; // nunca la contraseña (Regla 20)
+  const u = await db.collection('usuarios').findOne({ _id: new ObjectId(idUsuario) }, { projection: proj });
+  if (!u || u.estado !== 'Activo') return null;
+  const rolDoc = await db.collection('roles').findOne({ _id: u.id_rol }, { projection: { descripcion: 1 } });
+  return rolDoc ? { usuario: u, rol: rolDoc.descripcion } : null;
+}
+
 function firmarToken(u, rol) {
   return jwt.sign({ sub: u._id.toString(), rol }, process.env.JWT_SECRET, {
     algorithm: 'HS256',
@@ -132,5 +143,5 @@ async function restablecerContrasena(correo, codigo, nueva) {
 }
 
 module.exports = {
-  autenticar, firmarToken, cambiarContrasena, solicitarRecuperacion, restablecerContrasena,
+  autenticar, obtenerSesion, firmarToken, cambiarContrasena, solicitarRecuperacion, restablecerContrasena,
 };

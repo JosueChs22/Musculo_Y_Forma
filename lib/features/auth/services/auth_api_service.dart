@@ -3,15 +3,19 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import '../../../core/almacen_sesion.dart';
 import '../../../core/api_session.dart';
 import '../models/usuario.dart';
 import 'auth_service.dart';
 
 /// Implementación real: llama a /auth/login y /auth/cambiar-contrasena de la API.
 class AuthApiService implements AuthService {
-  AuthApiService({http.Client? client}) : _client = client ?? http.Client();
+  AuthApiService({http.Client? client, AlmacenSesion almacen = const AlmacenSesionSeguro()})
+      : _client = client ?? http.Client(),
+        _almacen = almacen;
 
   final http.Client _client;
+  final AlmacenSesion _almacen;
 
   // Render Free hace cold start de ~50 s: se espera hasta 60 s.
   static const _timeout = Duration(seconds: 60);
@@ -54,7 +58,37 @@ class AuthApiService implements AuthService {
       ),
     );
 
-    ApiSession.token = body['token'] as String;
+    final token = body['token'] as String;
+    ApiSession.token = token;
+    await _almacen.guardarToken(token);
+    return Usuario.fromJson(body['usuario'] as Map<String, dynamic>);
+  }
+
+  @override
+  Future<Usuario?> restaurarSesion() async {
+    final token = await _almacen.leerToken();
+    if (token == null) return null;
+
+    final http.Response res;
+    try {
+      res = await _client.get(
+        Uri.parse('$kApiBase/auth/sesion'),
+        headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+      ).timeout(_timeout);
+    } on TimeoutException {
+      return null; // sin respuesta: se pide login, pero el token queda para el próximo intento
+    } on http.ClientException {
+      return null;
+    }
+
+    if (res.statusCode == 401 || res.statusCode == 403) {
+      await _almacen.borrarToken(); // venció o la cuenta se inhabilitó
+      return null;
+    }
+    final body = _decodificar(res.body);
+    if (res.statusCode >= 400 || body['usuario'] is! Map<String, dynamic>) return null;
+
+    ApiSession.token = token;
     return Usuario.fromJson(body['usuario'] as Map<String, dynamic>);
   }
 
@@ -100,7 +134,10 @@ class AuthApiService implements AuthService {
   }
 
   @override
-  void cerrarSesion() => ApiSession.token = null;
+  Future<void> cerrarSesion() async {
+    ApiSession.token = null;
+    await _almacen.borrarToken();
+  }
 
   // Si el servidor devuelve algo que no es JSON, no reventamos: devolvemos vacío.
   Map<String, dynamic> _decodificar(String texto) {

@@ -8,48 +8,59 @@ import 'features/admin/services/usuarios_service.dart';
 import 'features/auth/controllers/auth_controller.dart';
 import 'features/auth/services/auth_api_service.dart';
 import 'features/auth/services/auth_service.dart';
-import 'features/coach/controllers/coach_controller.dart';
-import 'features/coach/services/coach_mock_service.dart';
-import 'features/coach/services/coach_service.dart';
+import 'features/ejercicios/controllers/ejercicios_controller.dart';
+import 'features/ejercicios/services/ejercicios_api_service.dart';
+import 'features/ejercicios/services/ejercicios_service.dart';
 import 'features/perfil/controllers/perfil_controller.dart';
-import 'features/perfil/services/perfil_mock_service.dart';
+import 'features/perfil/services/perfil_api_service.dart';
 import 'features/perfil/services/perfil_service.dart';
+import 'features/planes/controllers/planes_controller.dart';
+import 'features/planes/services/planes_api_service.dart';
+import 'features/planes/services/planes_service.dart';
 import 'features/progreso/controllers/progreso_controller.dart';
-import 'features/progreso/services/progreso_mock_service.dart';
+import 'features/progreso/services/progreso_api_service.dart';
 import 'features/progreso/services/progreso_service.dart';
 import 'features/rutinas/controllers/rutinas_controller.dart';
-import 'features/rutinas/services/rutinas_mock_service.dart';
+import 'features/rutinas/services/rutinas_api_service.dart';
 import 'features/rutinas/services/rutinas_service.dart';
 import 'features/secretaria/controllers/clases_controller.dart';
 import 'features/secretaria/services/clases_api_service.dart';
 import 'features/secretaria/services/clases_service.dart';
 
-/// Servicios de la app. Cuando exista la API, se cambian los Mock por los
-/// servicios reales aquí y nada más cambia (REGLA 0).
+/// Servicios de la app (REGLA 0). Todos hablan con la API; en pruebas se pueden
+/// pasar implementaciones mock por el constructor.
 class AppServices {
-  const AppServices({
-    this.perfil = const PerfilMockService(),
-    this.rutinas = const RutinasMockService(),
-    this.progreso = const ProgresoMockService(),
-    this.coach = const CoachMockService(),
-  });
+  const AppServices({PerfilService? perfil, RutinasService? rutinas, ProgresoService? progreso})
+      : _perfil = perfil,
+        _rutinas = rutinas,
+        _progreso = progreso;
 
-  final PerfilService perfil;
-  final RutinasService rutinas;
-  final ProgresoService progreso;
-  final CoachService coach;
+  final PerfilService? _perfil;
+  final RutinasService? _rutinas;
+  final ProgresoService? _progreso;
+
+  PerfilService get perfil => _perfil ?? PerfilApiService();
+
+  RutinasService get rutinas => _rutinas ?? RutinasApiService();
+
+  ProgresoService get progreso => _progreso ?? ProgresoApiService();
 
   ClasesService get clases => ClasesApiService();
 
   AuthService get auth => AuthApiService();
 
   UsuariosService get usuarios => UsuariosApiService();
+
+  EjerciciosService get ejercicios => EjerciciosApiService();
+
+  PlanesService get planes => PlanesApiService();
 }
 
 void main() => runApp(const AppRoot());
 
-/// Inyecta un controlador por funcionalidad. Todos cargan en paralelo
-/// al iniciar (REGLA 10) y cada vista muestra su skeleton mientras tanto.
+/// Inyecta un controlador por funcionalidad. Los datos propios del usuario (perfil,
+/// rutinas, progreso) se cargan en paralelo (REGLA 10) cada vez que cambia la sesión
+/// y se borran al cerrarla; cada vista muestra su skeleton mientras tanto.
 class AppRoot extends StatelessWidget {
   const AppRoot({super.key, this.services = const AppServices()});
 
@@ -63,13 +74,26 @@ class AppRoot extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthController(services.auth)..load()),
         // Panel del Administrador: la vista llama a load() al abrirse (necesita token).
         ChangeNotifierProvider(create: (_) => UsuariosController(services.usuarios)),
-        ChangeNotifierProvider(create: (_) => PerfilController(services.perfil)..load()),
-        ChangeNotifierProvider(create: (_) => RutinasController(services.rutinas)..load()),
-        ChangeNotifierProvider(create: (_) => ProgresoController(services.progreso)..load()),
-        // El panel de coach se carga solo cuando se abre (lazy por defecto).
-        ChangeNotifierProvider(create: (_) => CoachController(services.coach)..load()),
+        // Datos del usuario con sesión: se recargan al cambiar de usuario y se borran al salir
+        ChangeNotifierProxyProvider<AuthController, PerfilController>(
+          create: (_) => PerfilController(services.perfil),
+          update: (_, auth, c) => c!..usarUsuario(auth.usuario?.id),
+        ),
+        ChangeNotifierProxyProvider<AuthController, RutinasController>(
+          create: (_) => RutinasController(services.rutinas),
+          update: (_, auth, c) => c!..usarUsuario(auth.usuario?.id),
+        ),
+        ChangeNotifierProxyProvider<AuthController, ProgresoController>(
+          create: (_) => ProgresoController(services.progreso),
+          update: (_, auth, c) => c!..usarUsuario(auth.usuario?.id),
+        ),
+        // Panel del Entrenador: catálogo de ejercicios y planes. Las vistas llaman a load() al abrirse (necesitan el token).
+        Provider<EjerciciosService>(create: (_) => services.ejercicios),
+        Provider<PlanesService>(create: (_) => services.planes),
+        ChangeNotifierProvider(create: (c) => EjerciciosController(c.read<EjerciciosService>())),
+        ChangeNotifierProvider(create: (c) => PlanesController(c.read<PlanesService>())),
         // Panel de Secretaria: se carga cuando se abre la vista.
-        ChangeNotifierProvider(create: (_) => ClasesController(services.clases)..load()),
+        ChangeNotifierProvider(create: (_) => ClasesController(services.clases)),
       ],
       child: const GmyfApp(),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/imagen_red.dart';
 import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../../core/widgets.dart';
@@ -27,12 +28,32 @@ class RutinasView extends StatelessWidget {
       ]);
     }
 
-    if (loading || routine == null) {
+    if (loading) {
       return const SliverPage(slivers: [
         Box(SkeletonScope(child: SkeletonTitle()), gapAfter: 28),
         Box(SkeletonScope(child: SkeletonBox(height: 180, radius: 18)), gapAfter: 24),
         Box(SkeletonScope(child: SkeletonBox(height: 120, radius: 18)), gapAfter: 16),
         Box(SkeletonScope(child: Column(children: [SkeletonRow(), SkeletonRow(), SkeletonRow()]))),
+      ]);
+    }
+
+    if (routine == null) {
+      return SliverPage(slivers: [
+        const Box(_Header(), gapAfter: 24),
+        Box(Panel(
+          child: Row(children: [
+            const Icon(Icons.event_note_outlined, color: AppColors.indigo, size: 32),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Todavía no tienes rutinas asignadas', style: ts(16, weight: kSemi)),
+                const SizedBox(height: 2),
+                Text('Cuando tu entrenador te asigne un plan, lo verás aquí con cada ejercicio.',
+                    style: ts(14, color: AppColors.pizarra)),
+              ]),
+            ),
+          ]),
+        )),
       ]);
     }
 
@@ -57,7 +78,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final coach = context.select<PerfilController, String>((c) => c.profile.coachName);
+    final coach = context.select<PerfilController, String>((c) => c.profile.coachName ?? '');
     final count = context.select<RutinasController, int>((c) => c.routines.length);
     final wide = MediaQuery.sizeOf(context).width >= 640;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -128,7 +149,7 @@ class _RoutineTile extends StatelessWidget {
             ),
             child: Icon(Icons.fitness_center, size: 20, color: selected ? Colors.white : AppColors.indigo),
           ),
-          Text('${routine.exercises.length} ejercicios', style: ts(13, weight: kSemi, color: soft)),
+          Text('${routine.exercises.length} ${routine.exercises.length == 1 ? 'ejercicio' : 'ejercicios'}', style: ts(13, weight: kSemi, color: soft)),
         ]),
         const Spacer(),
         Text(routine.title.toUpperCase(), maxLines: 1, overflow: TextOverflow.ellipsis, style: display(26, color: fg)),
@@ -165,6 +186,10 @@ class _DetailHeader extends StatelessWidget {
             const SizedBox(height: 6),
             Text(routine.title.toUpperCase(), style: display(36)),
             Text(routine.focus, style: ts(15, color: AppColors.pizarra)),
+            if (routine.observaciones != null && routine.observaciones!.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(routine.observaciones!, style: ts(14, color: AppColors.ink)),
+            ],
           ]),
           PrimaryButton(
             label: 'Comenzar rutina',
@@ -193,7 +218,20 @@ class _ExerciseTile extends StatelessWidget {
           decoration: BoxDecoration(color: AppColors.indigoSoft, borderRadius: BorderRadius.circular(12)),
           child: Text('${index + 1}'.padLeft(2, '0'), style: display(20, color: AppColors.indigo)),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
+        if (exercise.imageUrl != null) ...[
+          // Al tocar la imagen se ve la animación del ejercicio
+          Semantics(
+            button: true,
+            label: 'Ver animación de ${exercise.name}',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _verAnimacion(context, exercise),
+              child: ImagenRed(exercise.imageUrl, size: 72),
+            ),
+          ),
+          const SizedBox(width: 14),
+        ],
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(exercise.name, style: ts(17, weight: kSemi)),
@@ -218,4 +256,21 @@ class _ExerciseTile extends StatelessWidget {
       ]),
     );
   }
+}
+
+void _verAnimacion(BuildContext context, Exercise e) {
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: AppColors.card,
+      title: Text(e.name.toUpperCase(), style: display(24)),
+      content: Center(heightFactor: 1, child: ImagenRed(e.gifUrl ?? e.imageUrl, size: 260, radius: 16)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(),
+          child: Text('Cerrar', style: ts(15, weight: kSemi, color: AppColors.cobalto)),
+        ),
+      ],
+    ),
+  );
 }

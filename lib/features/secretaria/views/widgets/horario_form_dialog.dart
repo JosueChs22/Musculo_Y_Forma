@@ -223,9 +223,8 @@ class _TimeField extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.card,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.line),
+            color: AppColors.fill,
+            borderRadius: BorderRadius.circular(kRadiusControl),
           ),
           child: Row(children: [
             Expanded(

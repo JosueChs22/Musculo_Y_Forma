@@ -4,14 +4,104 @@ import 'package:flutter/material.dart';
 
 import 'theme.dart';
 
-/// Tarjeta blanca con borde suave.
+/// Respuesta al toque de toda la app: el elemento se encoge un poco al
+/// presionarlo, se aclara al pasar el puntero y muestra un anillo cuando recibe
+/// el foco del teclado. Sirve igual con dedo, ratón y teclado (Enter / Espacio).
+class Pressable extends StatefulWidget {
+  const Pressable({
+    super.key,
+    required this.child,
+    required this.onTap,
+    this.radius = 18,
+    this.pressedScale = .97,
+    this.semanticLabel,
+    this.selected,
+  });
+
+  final Widget child;
+
+  /// null = deshabilitado.
+  final VoidCallback? onTap;
+  final double radius;
+  final double pressedScale;
+  final String? semanticLabel;
+  final bool? selected;
+
+  @override
+  State<Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<Pressable> {
+  bool _down = false;
+  bool _hover = false;
+  bool _focus = false;
+
+  void _set(VoidCallback cambio) {
+    if (mounted) setState(cambio);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final activo = widget.onTap != null;
+    // Si el sistema pide reducir el movimiento, no se escala
+    final quieto = MediaQuery.disableAnimationsOf(context);
+    final radio = BorderRadius.circular(widget.radius);
+
+    return Semantics(
+      button: true,
+      enabled: activo,
+      selected: widget.selected,
+      label: widget.semanticLabel,
+      child: FocusableActionDetector(
+        enabled: activo,
+        mouseCursor: activo ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        onShowHoverHighlight: (v) => _set(() => _hover = v),
+        onShowFocusHighlight: (v) => _set(() => _focus = v),
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: (_) {
+            widget.onTap?.call();
+            return null;
+          }),
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: activo ? (_) => _set(() => _down = true) : null,
+          onTapUp: activo ? (_) => _set(() => _down = false) : null,
+          onTapCancel: activo ? () => _set(() => _down = false) : null,
+          onTap: widget.onTap,
+          child: AnimatedScale(
+            scale: _down && !quieto ? widget.pressedScale : 1,
+            // Baja rápido y vuelve con calma: se siente elástico
+            duration: _down ? const Duration(milliseconds: 90) : kMedium,
+            curve: kCurve,
+            child: AnimatedContainer(
+              duration: kFast,
+              foregroundDecoration: BoxDecoration(
+                borderRadius: radio,
+                color: _down
+                    ? AppColors.pressed
+                    : _hover
+                        ? AppColors.hover
+                        : Colors.transparent,
+                border: _focus ? Border.all(color: AppColors.cobalto, width: 2) : null,
+              ),
+              child: widget.child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tarjeta blanca que flota sobre el fondo con una sombra suave (sin borde).
 class Panel extends StatelessWidget {
   const Panel({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.color = AppColors.card,
-    this.radius = 18,
+    this.radius = kRadiusCard,
   });
 
   final Widget child;
@@ -26,7 +116,8 @@ class Panel extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: AppColors.line),
+        // Las superficies de color (niebla, índigo) van planas
+        boxShadow: color == AppColors.card ? kShadowCard : null,
       ),
       child: child,
     );
@@ -52,27 +143,23 @@ class SelectableCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
+    return Pressable(
+      onTap: onTap,
+      radius: kRadiusCard,
+      pressedScale: .98,
       selected: selected,
-      label: semanticLabel,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: double.infinity,
-            padding: padding,
-            decoration: BoxDecoration(
-              color: selected ? AppColors.indigo : AppColors.card,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: selected ? AppColors.indigo : AppColors.line),
-            ),
-            child: child,
-          ),
+      semanticLabel: semanticLabel,
+      child: AnimatedContainer(
+        duration: kMedium,
+        curve: kCurve,
+        width: double.infinity,
+        padding: padding,
+        decoration: BoxDecoration(
+          color: selected ? AppColors.indigo : AppColors.card,
+          borderRadius: BorderRadius.circular(kRadiusCard),
+          boxShadow: kShadowCard,
         ),
+        child: child,
       ),
     );
   }
@@ -144,9 +231,18 @@ class MiniBar extends StatelessWidget {
         height: height,
         color: track,
         alignment: Alignment.centerLeft,
-        child: FractionallySizedBox(
-          widthFactor: value.clamp(0.0, 1.0),
-          child: Container(color: fill),
+        // La barra crece hasta su valor en vez de aparecer de golpe
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: value.clamp(0.0, 1.0)),
+          duration: const Duration(milliseconds: 600),
+          curve: kCurve,
+          builder: (context, v, _) => FractionallySizedBox(
+            widthFactor: v,
+            child: DecoratedBox(
+              decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(99)),
+              child: const SizedBox.expand(),
+            ),
+          ),
         ),
       ),
     );
@@ -176,6 +272,62 @@ class Avatar extends StatelessWidget {
       );
 }
 
+/// Base de los botones: forma, tamaño mínimo táctil (48+) y respuesta al toque.
+class _Boton extends StatelessWidget {
+  const _Boton({
+    required this.label,
+    required this.onPressed,
+    required this.fondo,
+    required this.texto,
+    this.icon,
+    this.expand = false,
+    this.busy = false,
+    this.tamano = 16,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final Color fondo;
+  final Color texto;
+  final IconData? icon;
+  final bool expand;
+  final bool busy;
+  final double tamano;
+
+  @override
+  Widget build(BuildContext context) {
+    final activo = onPressed != null && !busy;
+    return AnimatedOpacity(
+      duration: kFast,
+      opacity: activo || busy ? 1 : .45,
+      child: Pressable(
+        onTap: activo ? onPressed : null,
+        radius: 16,
+        pressedScale: .96,
+        child: Container(
+          width: expand ? double.infinity : null,
+          constraints: const BoxConstraints(minHeight: 50, minWidth: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+          decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(16)),
+          child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
+            if (busy)
+              SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: texto))
+            else ...[
+              Flexible(
+                child: Text(label, overflow: TextOverflow.ellipsis, style: ts(tamano, weight: kSemi, color: texto)),
+              ),
+              if (icon != null) ...[
+                const SizedBox(width: 8),
+                Icon(icon, size: 20, color: texto),
+              ],
+            ],
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
 /// Botón principal (ámbar con texto tinta).
 class PrimaryButton extends StatelessWidget {
   const PrimaryButton({
@@ -195,40 +347,18 @@ class PrimaryButton extends StatelessWidget {
   final bool busy;
 
   @override
-  Widget build(BuildContext context) {
-    final child = busy
-        ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.ink),
-          )
-        : Row(mainAxisSize: MainAxisSize.min, children: [
-            Flexible(
-              child: Text(label,
-                  overflow: TextOverflow.ellipsis, style: ts(16, weight: kSemi, color: AppColors.ink)),
-            ),
-            if (icon != null) ...[
-              const SizedBox(width: 8),
-              Icon(icon, size: 20, color: AppColors.ink),
-            ],
-          ]);
-    final button = FilledButton(
-      onPressed: busy ? null : onPressed,
-      style: FilledButton.styleFrom(
-        backgroundColor: AppColors.ambar,
-        disabledBackgroundColor: const Color(0x99FFB547),
-        foregroundColor: AppColors.ink,
-        minimumSize: const Size(48, 50),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      ),
-      child: child,
-    );
-    return expand ? SizedBox(width: double.infinity, child: button) : button;
-  }
+  Widget build(BuildContext context) => _Boton(
+        label: label,
+        onPressed: onPressed,
+        icon: icon,
+        expand: expand,
+        busy: busy,
+        fondo: AppColors.ambar,
+        texto: AppColors.ink,
+      );
 }
 
-/// Botón secundario (contorno cobalto).
+/// Botón secundario: fondo cobalto muy suave con texto cobalto.
 class SecondaryButton extends StatelessWidget {
   const SecondaryButton({super.key, required this.label, required this.onPressed, this.icon});
   final String label;
@@ -236,25 +366,13 @@ class SecondaryButton extends StatelessWidget {
   final IconData? icon;
 
   @override
-  Widget build(BuildContext context) => OutlinedButton(
+  Widget build(BuildContext context) => _Boton(
+        label: label,
         onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.cobalto,
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          side: const BorderSide(color: AppColors.cobalto, width: 2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Flexible(
-            child: Text(label,
-                overflow: TextOverflow.ellipsis, style: ts(15, weight: kSemi, color: AppColors.cobalto)),
-          ),
-          if (icon != null) ...[
-            const SizedBox(width: 8),
-            Icon(icon, size: 18, color: AppColors.cobalto),
-          ],
-        ]),
+        icon: icon,
+        fondo: AppColors.cobaltoSoft,
+        texto: AppColors.cobalto,
+        tamano: 15,
       );
 }
 
@@ -331,11 +449,14 @@ class SliverPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 800;
+    // En móvil el contenido pasa por debajo de las barras translúcidas: el
+    // shell informa su alto como padding para que nada quede tapado.
+    final barras = MediaQuery.paddingOf(context);
     final h = wide ? 48.0 : 20.0;
     return CustomScrollView(slivers: [
-      SliverPadding(padding: EdgeInsets.fromLTRB(h, wide ? 36 : 24, h, 0)),
+      SliverPadding(padding: EdgeInsets.fromLTRB(h, barras.top + (wide ? 36 : 20), h, 0)),
       for (final s in slivers) SliverPadding(padding: EdgeInsets.symmetric(horizontal: h), sliver: s),
-      SliverPadding(padding: EdgeInsets.only(bottom: wide ? 48 : 120)),
+      SliverPadding(padding: EdgeInsets.only(bottom: barras.bottom + (wide ? 48 : 28))),
     ]);
   }
 }
