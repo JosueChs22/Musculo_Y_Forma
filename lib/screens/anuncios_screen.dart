@@ -3,7 +3,34 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-import 'anuncios_theme.dart';
+import '../core/theme.dart';
+
+// Componentes de presentación usando exclusivamente los tokens del tema oficial.
+ButtonStyle _botonPrincipal() => ElevatedButton.styleFrom(
+      backgroundColor: AppColors.ambar,
+      foregroundColor: AppColors.ink,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      textStyle: ts(15, weight: kSemi),
+    );
+
+BoxDecoration _tarjeta() => BoxDecoration(
+      color: AppColors.card,
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: AppColors.line),
+      boxShadow: [
+        BoxShadow(
+          color: AppColors.indigo.withValues(alpha: 0.05),
+          blurRadius: 16,
+          offset: const Offset(0, 6),
+        ),
+      ],
+    );
+
+InputDecoration _campo(String etiqueta) => InputDecoration(
+      labelText: etiqueta,
+      labelStyle: ts(15, color: AppColors.pizarra),
+    );
 
 class AnunciosScreen extends StatefulWidget {
   const AnunciosScreen({super.key});
@@ -52,6 +79,30 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
         anuncios = datos
             .map((item) => Map<String, dynamic>.from(item as Map))
             .toList();
+
+        // Los ObjectId de MongoDB incluyen el momento de creación.
+        // Por eso, ordenar por _id descendente muestra primero
+        // los anuncios recién creados, aunque su publicación sea futura.
+        anuncios.sort((a, b) {
+          final idA = a['_id']?.toString() ?? '';
+          final idB = b['_id']?.toString() ?? '';
+          final objectId = RegExp(r'^[0-9a-fA-F]{24}$');
+
+          if (objectId.hasMatch(idA) && objectId.hasMatch(idB)) {
+            return idB.toLowerCase().compareTo(idA.toLowerCase());
+          }
+
+          // Alternativa si el backend no devuelve ObjectId.
+          DateTime fecha(Map<String, dynamic> anuncio) {
+            final valor = anuncio['fecha_creacion'] ??
+                anuncio['createdAt'] ??
+                anuncio['fecha_publicacion'];
+            return DateTime.tryParse(valor?.toString() ?? '') ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+          }
+
+          return fecha(b).compareTo(fecha(a));
+        });
       });
     } catch (e) {
       if (!mounted) return;
@@ -196,62 +247,49 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AnunciosTheme.cobalto,
-        ),
-      ),
-      child: ColoredBox(
-        color: AnunciosTheme.fondo,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'MÚSCULO Y FORMA',
-                  style: AnunciosTheme.texto(
-                    size: 13,
-                    color: AnunciosTheme.cobalto,
-                    weight: FontWeight.bold,
+    return ColoredBox(
+      color: AppColors.niebla,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'MÚSCULO Y FORMA',
+                style: ts(13, color: AppColors.cobalto, weight: kSemi),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Gestión de anuncios',
+                style: display(36, color: AppColors.indigo),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Panel de la Secretaria',
+                style: ts(15, color: AppColors.pizarra),
+              ),
+              const SizedBox(height: 24),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  ElevatedButton.icon(
+                    style: _botonPrincipal(),
+                    onPressed: () => abrirFormulario(),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Crear anuncio'),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Gestión de anuncios',
-                  style: AnunciosTheme.titulo(size: 36),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Panel de la Secretaria',
-                  style: AnunciosTheme.texto(),
-                ),
-                const SizedBox(height: 24),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    ElevatedButton.icon(
-                      style: AnunciosTheme.botonPrincipal(),
-                      onPressed: () => abrirFormulario(),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Crear anuncio'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: cargarAnuncios,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Actualizar lista'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                Expanded(child: _contenido()),
-              ],
-            ),
+                  OutlinedButton.icon(
+                    onPressed: cargarAnuncios,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Actualizar lista'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Expanded(child: _contenido()),
+            ],
           ),
         ),
       ),
@@ -268,7 +306,7 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
         child: Text(
           'No se pudieron cargar los anuncios.\n$error',
           textAlign: TextAlign.center,
-          style: AnunciosTheme.texto(),
+          style: ts(15, color: AppColors.pizarra),
         ),
       );
     }
@@ -277,7 +315,7 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
       return Center(
         child: Text(
           'Todavía no hay anuncios registrados.',
-          style: AnunciosTheme.texto(size: 17),
+          style: ts(17, color: AppColors.pizarra),
         ),
       );
     }
@@ -291,7 +329,7 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
 
         return Container(
           padding: const EdgeInsets.all(20),
-          decoration: AnunciosTheme.tarjeta(),
+          decoration: _tarjeta(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -303,7 +341,7 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
                 children: [
                   Text(
                     anuncio['titulo']?.toString() ?? '',
-                    style: AnunciosTheme.titulo(size: 24),
+                    style: display(24, color: AppColors.indigo),
                   ),
                   Chip(
                     label: Text(activo ? 'Activo' : 'Inhabilitado'),
@@ -316,22 +354,22 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
               const SizedBox(height: 8),
               Text(
                 anuncio['contenido']?.toString() ?? '',
-                style: AnunciosTheme.texto(),
+                style: ts(15, color: AppColors.pizarra),
               ),
               const SizedBox(height: 12),
               Text(
                 'Clasificación: ${anuncio['clasificacion'] ?? 'Sin clasificación'}',
-                style: AnunciosTheme.texto(size: 13),
+                style: ts(13, color: AppColors.pizarra),
               ),
               const SizedBox(height: 8),
               Text(
                 'Publicación: ${mostrarFecha(anuncio['fecha_publicacion'])}',
-                style: AnunciosTheme.texto(size: 13),
+                style: ts(13, color: AppColors.pizarra),
               ),
               const SizedBox(height: 4),
               Text(
                 'Vencimiento: ${mostrarFecha(anuncio['fecha_fin'])}',
-                style: AnunciosTheme.texto(size: 13),
+                style: ts(13, color: AppColors.pizarra),
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -512,133 +550,118 @@ class _FormularioAnuncioState extends State<_FormularioAnuncio> {
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF3A55E8),
-          brightness: Brightness.light,
-        ),
-        inputDecorationTheme: const InputDecorationTheme(
-          floatingLabelStyle: TextStyle(
-            color: Color(0xFF3A55E8),
-          ),
-        ),
+    return Dialog(
+      backgroundColor: AppColors.card,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Dialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    editando ? 'Editar anuncio' : 'Crear anuncio',
-                    style: AnunciosTheme.titulo(size: 30),
-                  ),
-                  const SizedBox(height: 20),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  editando ? 'Editar anuncio' : 'Crear anuncio',
+                  style: display(30, color: AppColors.indigo),
+                ),
+                const SizedBox(height: 20),
 
-                  // TÍTULO
-                  TextFormField(
-                    controller: titulo,
-                    maxLength: 150,
-                    style: const TextStyle(color: Colors.black87),
-                    cursorColor: const Color(0xFF3A55E8),
-                    decoration: AnunciosTheme.campo('Título'),
-                    validator: (valor) => valor == null || valor.trim().isEmpty
-                        ? 'Ingresá el título'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
+                // TÍTULO
+                TextFormField(
+                  controller: titulo,
+                  maxLength: 150,
+                  style: ts(15),
+                  cursorColor: AppColors.cobalto,
+                  decoration: _campo('Título'),
+                  validator: (valor) => valor == null || valor.trim().isEmpty
+                      ? 'Ingresá el título'
+                      : null,
+                ),
+                const SizedBox(height: 12),
 
-                  // CONTENIDO
-                  TextFormField(
-                    controller: contenido,
-                    maxLength: 5000,
-                    maxLines: 4,
-                    style: const TextStyle(color: Colors.black87),
-                    cursorColor: const Color(0xFF3A55E8),
-                    decoration: AnunciosTheme.campo('Contenido'),
-                    validator: (valor) => valor == null || valor.trim().isEmpty
-                        ? 'Ingresá el contenido'
-                        : null,
-                  ),
-                  const SizedBox(height: 12),
+                // CONTENIDO
+                TextFormField(
+                  controller: contenido,
+                  maxLength: 5000,
+                  maxLines: 4,
+                  style: ts(15),
+                  cursorColor: AppColors.cobalto,
+                  decoration: _campo('Contenido'),
+                  validator: (valor) => valor == null || valor.trim().isEmpty
+                      ? 'Ingresá el contenido'
+                      : null,
+                ),
+                const SizedBox(height: 12),
 
-                  // CLASIFICACIÓN
-                  TextFormField(
-                    controller: clasificacion,
-                    maxLength: 60,
-                    style: const TextStyle(color: Colors.black87),
-                    cursorColor: const Color(0xFF3A55E8),
-                    decoration: AnunciosTheme.campo('Clasificación'),
-                  ),
-                  const SizedBox(height: 12),
+                // CLASIFICACIÓN
+                TextFormField(
+                  controller: clasificacion,
+                  maxLength: 60,
+                  style: ts(15),
+                  cursorColor: AppColors.cobalto,
+                  decoration: _campo('Clasificación'),
+                ),
+                const SizedBox(height: 12),
 
-                  // FECHA DE PUBLICACIÓN
-                  OutlinedButton.icon(
-                    onPressed: () => seleccionarFecha(true),
-                    icon: const Icon(Icons.calendar_today),
-                    label: Text(
-                      'Publicación: ${formatoFecha(fechaPublicacion)}',
+                // FECHA DE PUBLICACIÓN
+                OutlinedButton.icon(
+                  onPressed: () => seleccionarFecha(true),
+                  icon: const Icon(Icons.calendar_today),
+                  label: Text(
+                    'Publicación: ${formatoFecha(fechaPublicacion)}',
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // FECHA DE VENCIMIENTO
+                OutlinedButton.icon(
+                  onPressed: () => seleccionarFecha(false),
+                  icon: const Icon(Icons.event),
+                  label: Text(
+                    'Vencimiento: ${formatoFecha(fechaFin)}',
+                  ),
+                ),
+
+                TextButton(
+                  onPressed: () {
+                    setState(() => fechaFin = null);
+                  },
+                  child: const Text('Sin fecha de vencimiento'),
+                ),
+
+                const SizedBox(height: 20),
+
+                // BOTONES
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 10,
+                  children: [
+                    TextButton(
+                      onPressed: guardando
+                          ? null
+                          : () => Navigator.pop(context, false),
+                      child: const Text('Cancelar'),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // FECHA DE VENCIMIENTO
-                  OutlinedButton.icon(
-                    onPressed: () => seleccionarFecha(false),
-                    icon: const Icon(Icons.event),
-                    label: Text(
-                      'Vencimiento: ${formatoFecha(fechaFin)}',
+                    ElevatedButton(
+                      style: _botonPrincipal(),
+                      onPressed: guardando ? null : guardar,
+                      child: Text(
+                        guardando
+                            ? 'Guardando...'
+                            : editando
+                                ? 'Guardar cambios'
+                                : 'Crear anuncio',
+                      ),
                     ),
-                  ),
-
-                  TextButton(
-                    onPressed: () {
-                      setState(() => fechaFin = null);
-                    },
-                    child: const Text('Sin fecha de vencimiento'),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // BOTONES
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 10,
-                    children: [
-                      TextButton(
-                        onPressed: guardando
-                            ? null
-                            : () => Navigator.pop(context, false),
-                        child: const Text('Cancelar'),
-                      ),
-                      ElevatedButton(
-                        style: AnunciosTheme.botonPrincipal(),
-                        onPressed: guardando ? null : guardar,
-                        child: Text(
-                          guardando
-                              ? 'Guardando...'
-                              : editando
-                                  ? 'Guardar cambios'
-                                  : 'Crear anuncio',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),

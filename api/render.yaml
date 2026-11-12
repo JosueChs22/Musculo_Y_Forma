@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: gmyf-api
+    runtime: node
+    rootDir: api
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false   # Lo configuras manualmente en el dashboard de Render
+      - key: CORS_ORIGINS
+        sync: false   # Ej: https://tu-app.onrender.com

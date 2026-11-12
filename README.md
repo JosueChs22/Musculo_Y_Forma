@@ -1,4 +1,4 @@
-# PULSO · Prototipo Flutter
+# Músculo y Forma (GMYF) · App Flutter
 
 Prototipo de la app de rutinas para gimnasio (diseño de Figma Make), con datos de ejemplo.
 Stack objetivo: **Flutter + API + MongoDB** (la API y la base de datos aún no están conectadas).
@@ -21,22 +21,25 @@ flutter run -d chrome                        # o un emulador / dispositivo
 
 Responsivo: barra lateral en pantallas anchas (≥1000 px), barra inferior en móvil.
 
-## Arquitectura
+## Arquitectura (Modelo · Servicio · Controlador · Vista)
 
 ```
 lib/
-  core/          tema y widgets compartidos
-  models/        Exercise, Routine, BodyMetric, Client... (fromJson/toJson listos)
-  repositories/  GymRepository (interfaz) + MockGymRepository (datos de ejemplo)
-  state/         AppState (Provider)
-  screens/       una pantalla por archivo + shell de navegación
-  widgets/       diálogos reutilizables
+  core/        tema (Dirección B), widgets compartidos, skeletons, emblema GMYF, debouncer, BaseController, shell de navegación
+  features/
+    inicio/    views/
+    rutinas/   models/ services/ controllers/ views/
+    progreso/  models/ services/ controllers/ views/
+    coach/     models/ services/ controllers/ views/
+    perfil/    models/ services/ controllers/ views/
+  app.dart     rutas (go_router)
+  main.dart    inyección de servicios y controladores (Provider)
+assets/fonts/  Barlow y Barlow Condensed (fuentes locales)
 ```
 
+Reglas completas del proyecto: ver `CLAUDE.md`.
+
 ## Conectar la API con MongoDB después
-1. Crear `ApiGymRepository implements GymRepository` (con `http` o `dio`).
-2. En `main.dart`, cambiar `MockGymRepository()` por `ApiGymRepository()`.
-3. Las pantallas no cambian. Los modelos ya leen `_id` como `String`
-   (serializa el ObjectId como string en la API).
-4. Pendiente en el mock: resumen InBody (`progress_screen.dart`), guardado de
-   `assignRoutine` y autenticación/roles usuario-coach.
+1. Por cada funcionalidad, crear `*_api_service.dart` que implemente la interfaz `*_service.dart` (con `http` o `dio`, timeout de 10 s).
+2. En `main.dart`, pasar los servicios reales en `AppServices(...)` en lugar de los Mock.
+3. Las vistas y controladores no cambian. Los modelos ya leen `_id` como `String`.

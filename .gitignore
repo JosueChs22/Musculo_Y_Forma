@@ -47,16 +47,21 @@ app.*.map.json
 # Widget Preview related
 .widget_preview/
 
-# Backend Node.js
+
+
+# Backend de anuncios - Sprint 3
 backend/node_modules/
 backend/.env
 backend/.env.*
 !backend/.env.example
-
-# Imágenes subidas por usuarios
 backend/uploads/
 
-# Archivos locales
+# API del equipo
+api/node_modules/
+api/.env
+api/.env.*
+!api/.env.example
+
+# Archivos temporales
 *.log
 .DS_Store
-backend/.env.test

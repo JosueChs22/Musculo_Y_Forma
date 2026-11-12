@@ -1,61 +1,85 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/app_shell.dart';
 import 'core/theme.dart';
+
+// Pantallas oficiales del equipo
+import 'features/coach/views/coach_view.dart';
+import 'features/inicio/views/inicio_view.dart';
+import 'features/perfil/views/perfil_view.dart';
+import 'features/progreso/views/progreso_view.dart';
+import 'features/rutinas/views/rutinas_view.dart';
+import 'features/secretaria/views/secretaria_view.dart';
+
+// Sprint 3 - Anuncios
 import 'screens/anuncios_screen.dart';
-import 'screens/coach_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/profile_screen.dart';
-import 'screens/progress_screen.dart';
-import 'screens/routines_screen.dart';
-import 'screens/shell.dart';
 
 Page<void> _page(Widget child) => NoTransitionPage<void>(child: child);
 
-final _router = GoRouter(
-  routes: [
-    ShellRoute(
-      builder: (context, state, child) =>
-          AppShell(location: state.uri.path, child: child),
+GoRouter buildRouter() => GoRouter(
       routes: [
-        GoRoute(
-          path: '/',
-          pageBuilder: (c, s) => _page(const HomeScreen()),
-        ),
-        GoRoute(
-          path: '/rutinas',
-          pageBuilder: (c, s) => _page(const RoutinesScreen()),
-        ),
-        GoRoute(
-          path: '/progreso',
-          pageBuilder: (c, s) => _page(const ProgressScreen()),
-        ),
-        GoRoute(
-          path: '/perfil',
-          pageBuilder: (c, s) => _page(const ProfileScreen()),
-        ),
-        GoRoute(
-          path: '/coach',
-          pageBuilder: (c, s) => _page(const CoachScreen()),
-        ),
+        ShellRoute(
+          builder: (context, state, child) => AppShell(
+            location: state.uri.path,
+            child: child,
+          ),
+          routes: [
+            GoRoute(
+              path: '/',
+              pageBuilder: (c, s) => _page(const InicioView()),
+            ),
+            GoRoute(
+              path: '/rutinas',
+              pageBuilder: (c, s) => _page(const RutinasView()),
+            ),
+            GoRoute(
+              path: '/progreso',
+              pageBuilder: (c, s) => _page(const ProgresoView()),
+            ),
+            GoRoute(
+              path: '/perfil',
+              pageBuilder: (c, s) => _page(const PerfilView()),
+            ),
+            GoRoute(
+              path: '/coach',
+              pageBuilder: (c, s) => _page(const CoachView()),
+            ),
+            GoRoute(
+              path: '/secretaria',
+              pageBuilder: (c, s) => _page(const SecretariaView()),
+            ),
 
-        // SPRINT 3 - GESTIÓN DE ANUNCIOS
-        GoRoute(
-          path: '/anuncios',
-          pageBuilder: (c, s) => _page(const AnunciosScreen()),
+            // GYM-67, GYM-72, GYM-77 y GYM-82
+            GoRoute(
+              path: '/anuncios',
+              pageBuilder: (c, s) => _page(const AnunciosScreen()),
+            ),
+          ],
         ),
       ],
-    ),
-  ],
-);
+    );
 
-class PulsoApp extends StatelessWidget {
-  const PulsoApp({super.key});
+class GmyfApp extends StatefulWidget {
+  const GmyfApp({super.key});
+
+  @override
+  State<GmyfApp> createState() => _GmyfAppState();
+}
+
+class _GmyfAppState extends State<GmyfApp> {
+  late final GoRouter _router = buildRouter();
+
+  @override
+  void dispose() {
+    _router.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'PULSO',
+      title: 'Músculo y Forma',
       debugShowCheckedModeBanner: false,
       theme: buildTheme(),
       routerConfig: _router,
