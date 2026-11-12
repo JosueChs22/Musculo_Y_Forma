@@ -137,6 +137,63 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
     }
   }
 
+  // GYM-82: formato de las fechas registradas en MongoDB.
+  String mostrarFecha(dynamic valor) {
+    if (valor == null || valor.toString().trim().isEmpty) {
+      return 'Sin fecha de vencimiento';
+    }
+
+    final fecha = DateTime.tryParse(valor.toString());
+    if (fecha == null) return 'Fecha no disponible';
+
+    final local = fecha.toLocal();
+    return '${local.day.toString().padLeft(2, '0')}/'
+        '${local.month.toString().padLeft(2, '0')}/'
+        '${local.year}';
+  }
+
+  // GYM-82: consulta del contenido completo del anuncio.
+  void verDetalleAnuncio(Map<String, dynamic> anuncio) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(anuncio['titulo']?.toString() ?? 'Anuncio'),
+        content: SizedBox(
+          width: 450,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(anuncio['contenido']?.toString() ?? ''),
+                const SizedBox(height: 20),
+                Text(
+                  'Clasificación: ${anuncio['clasificacion'] ?? 'Sin clasificación'}',
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Publicación: ${mostrarFecha(anuncio['fecha_publicacion'])}',
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Vencimiento: ${mostrarFecha(anuncio['fecha_fin'])}',
+                ),
+                const SizedBox(height: 8),
+                Text('Estado: ${anuncio['estado'] ?? 'Desconocido'}'),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Theme(
@@ -266,11 +323,26 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
                 'Clasificación: ${anuncio['clasificacion'] ?? 'Sin clasificación'}',
                 style: AnunciosTheme.texto(size: 13),
               ),
+              const SizedBox(height: 8),
+              Text(
+                'Publicación: ${mostrarFecha(anuncio['fecha_publicacion'])}',
+                style: AnunciosTheme.texto(size: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Vencimiento: ${mostrarFecha(anuncio['fecha_fin'])}',
+                style: AnunciosTheme.texto(size: 13),
+              ),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 10,
                 runSpacing: 8,
                 children: [
+                  OutlinedButton.icon(
+                    onPressed: () => verDetalleAnuncio(anuncio),
+                    icon: const Icon(Icons.visibility_outlined),
+                    label: const Text('Ver detalles'),
+                  ),
                   OutlinedButton.icon(
                     onPressed: () => abrirFormulario(anuncio),
                     icon: const Icon(Icons.edit_outlined),
