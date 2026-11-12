@@ -1,4 +1,4 @@
-﻿
+
 name: pulso_app
 description: App de Músculo y Forma (GMYF) - rutinas, progreso y panel de coach para el gimnasio.
 publish_to: 'none'
@@ -14,6 +14,8 @@ dependencies:
   provider: ^6.1.2
   google_fonts: ^6.2.1
   http: ^1.6.0
+  file_picker: ^13.3.3
+  http_parser: ^4.1.2
 
 dev_dependencies:
   flutter_test:

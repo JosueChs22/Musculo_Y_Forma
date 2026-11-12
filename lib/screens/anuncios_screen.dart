@@ -1,51 +1,111 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../core/theme.dart';
 
-// Componentes de presentación usando exclusivamente los tokens del tema oficial.
-ButtonStyle _botonPrincipal() => ElevatedButton.styleFrom(
-      backgroundColor: AppColors.ambar,
-      foregroundColor: AppColors.ink,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      textStyle: ts(15, weight: kSemi),
-    );
+// API local de pruebas del Sprint 3.
+const String _apiUrl = 'http://localhost:3001/api/anuncios';
 
-BoxDecoration _tarjeta() => BoxDecoration(
-      color: AppColors.card,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.line),
-      boxShadow: [
-        BoxShadow(
-          color: AppColors.indigo.withValues(alpha: 0.05),
-          blurRadius: 16,
-          offset: const Offset(0, 6),
-        ),
-      ],
-    );
+// Tamaño máximo de imagen: 3 MB.
+const int _maxImagen = 3 * 1024 * 1024;
 
-InputDecoration _campo(String etiqueta) => InputDecoration(
-      labelText: etiqueta,
-      labelStyle: ts(15, color: AppColors.pizarra),
-    );
+// ==========================================
+// FUNCIONES AUXILIARES
+// ==========================================
+
+String _fecha(dynamic valor) {
+  if (valor == null || valor.toString().isEmpty) {
+    return 'Sin vencimiento';
+  }
+
+  final fecha = DateTime.tryParse(valor.toString());
+
+  if (fecha == null) {
+    return 'No disponible';
+  }
+
+  final f = fecha.toLocal();
+
+  return '${f.day.toString().padLeft(2, '0')}/'
+      '${f.month.toString().padLeft(2, '0')}/'
+      '${f.year}';
+}
+
+DateTime? _leerFecha(dynamic valor) {
+  return DateTime.tryParse(
+    valor?.toString() ?? '',
+  )?.toLocal();
+}
+
+String _errorHttp(http.Response respuesta) {
+  try {
+    final body = jsonDecode(respuesta.body);
+
+    if (body is Map) {
+      return (body['mensaje'] ??
+              body['error'] ??
+              'HTTP ${respuesta.statusCode}')
+          .toString();
+    }
+  } catch (_) {
+    // Respuesta sin JSON válido.
+  }
+
+  return 'Error HTTP ${respuesta.statusCode}';
+}
+
+String? _urlImagen(dynamic imagen) {
+  if (imagen is! String || imagen.trim().isEmpty) {
+    return null;
+  }
+
+  if (imagen.startsWith('https://') || imagen.startsWith('http://')) {
+    return imagen;
+  }
+
+  if (imagen.startsWith('/uploads/')) {
+    return 'http://localhost:3001$imagen';
+  }
+
+  return null;
+}
+
+ButtonStyle _estiloPrincipal() {
+  return ElevatedButton.styleFrom(
+    backgroundColor: AppColors.ambar,
+    foregroundColor: AppColors.ink,
+    padding: const EdgeInsets.symmetric(
+      horizontal: 20,
+      vertical: 16,
+    ),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+  );
+}
+
+// ==========================================
+// PANTALLA PRINCIPAL DE ANUNCIOS
+// ==========================================
 
 class AnunciosScreen extends StatefulWidget {
   const AnunciosScreen({super.key});
 
   @override
-  State<AnunciosScreen> createState() => _AnunciosScreenState();
+  State<AnunciosScreen> createState() {
+    return _AnunciosScreenState();
+  }
 }
 
 class _AnunciosScreenState extends State<AnunciosScreen> {
-  // Para Flutter Web o Windows en la misma computadora.
-  // En un emulador Android usar http://10.0.2.2:3001
-  static const String apiUrl = 'http://localhost:3001/api/anuncios';
-
   List<Map<String, dynamic>> anuncios = [];
-  bool cargando = true;
+
+  bool cargando = false;
   String? error;
 
   @override
@@ -54,6 +114,10 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
     cargarAnuncios();
   }
 
+  // ==========================================
+  // GYM-82: VISUALIZAR ANUNCIOS
+  // ==========================================
+
   Future<void> cargarAnuncios() async {
     setState(() {
       cargando = true;
@@ -61,189 +125,254 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
     });
 
     try {
-      final respuesta = await http.get(Uri.parse(apiUrl));
+      final respuesta = await http
+          .get(Uri.parse(_apiUrl))
+          .timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode != 200) {
-        throw Exception('Error HTTP ${respuesta.statusCode}');
+        throw Exception(_errorHttp(respuesta));
       }
 
       final datos = jsonDecode(respuesta.body);
 
       if (datos is! List) {
-        throw Exception('La API no devolvió una lista');
+        throw Exception(
+          'La API no devolvió una lista de anuncios',
+        );
       }
+
+      final lista = datos
+          .map(
+            (e) => Map<String, dynamic>.from(
+              e as Map,
+            ),
+          )
+          .toList();
+
+      // Mostrar los anuncios recién creados primero.
+      // Se utiliza el ObjectId de MongoDB.
+      lista.sort((a, b) {
+        final idA = a['_id']?.toString() ?? '';
+        final idB = b['_id']?.toString() ?? '';
+
+        return idB.compareTo(idA);
+      });
 
       if (!mounted) return;
 
       setState(() {
-        anuncios = datos
-            .map((item) => Map<String, dynamic>.from(item as Map))
-            .toList();
-
-        // Los ObjectId de MongoDB incluyen el momento de creación.
-        // Por eso, ordenar por _id descendente muestra primero
-        // los anuncios recién creados, aunque su publicación sea futura.
-        anuncios.sort((a, b) {
-          final idA = a['_id']?.toString() ?? '';
-          final idB = b['_id']?.toString() ?? '';
-          final objectId = RegExp(r'^[0-9a-fA-F]{24}$');
-
-          if (objectId.hasMatch(idA) && objectId.hasMatch(idB)) {
-            return idB.toLowerCase().compareTo(idA.toLowerCase());
-          }
-
-          // Alternativa si el backend no devuelve ObjectId.
-          DateTime fecha(Map<String, dynamic> anuncio) {
-            final valor = anuncio['fecha_creacion'] ??
-                anuncio['createdAt'] ??
-                anuncio['fecha_publicacion'];
-            return DateTime.tryParse(valor?.toString() ?? '') ??
-                DateTime.fromMillisecondsSinceEpoch(0);
-          }
-
-          return fecha(b).compareTo(fecha(a));
-        });
+        anuncios = lista;
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() => error = e.toString());
+
+      setState(() {
+        error = e.toString();
+      });
     } finally {
-      if (mounted) setState(() => cargando = false);
+      if (mounted) {
+        setState(() {
+          cargando = false;
+        });
+      }
     }
   }
 
-  Future<void> abrirFormulario([Map<String, dynamic>? anuncio]) async {
+  // ==========================================
+  // CREAR Y EDITAR ANUNCIOS
+  // ==========================================
+
+  Future<void> abrirFormulario([
+    Map<String, dynamic>? anuncio,
+  ]) async {
     final guardado = await showDialog<bool>(
       context: context,
-      builder: (_) => _FormularioAnuncio(
-        apiUrl: apiUrl,
-        anuncio: anuncio,
-      ),
+      builder: (_) {
+        return _FormularioAnuncio(
+          anuncio: anuncio,
+        );
+      },
     );
 
     if (guardado == true) {
       await cargarAnuncios();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            anuncio == null
+                ? 'Anuncio creado correctamente'
+                : 'Anuncio actualizado correctamente',
+          ),
+        ),
+      );
     }
   }
 
-  Future<void> inhabilitar(Map<String, dynamic> anuncio) async {
+  // ==========================================
+  // GYM-77: INHABILITAR ANUNCIOS
+  // ==========================================
+
+  Future<void> inhabilitar(
+    Map<String, dynamic> anuncio,
+  ) async {
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Inhabilitar anuncio'),
-        content: Text(
-          '¿Deseás inhabilitar "${anuncio['titulo']}"?\n\n'
-          'El anuncio dejará de mostrarse como publicado, '
-          'pero permanecerá guardado.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancelar'),
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Inhabilitar anuncio'),
+          content: Text(
+            '¿Deseás inhabilitar "${anuncio['titulo']}"?\n\n'
+            'El anuncio permanecerá en la base de datos.',
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Sí, inhabilitar'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx, false);
+              },
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(ctx, true);
+              },
+              child: const Text('Inhabilitar'),
+            ),
+          ],
+        );
+      },
     );
 
-    if (confirmar != true || !mounted) return;
+    if (confirmar != true || !mounted) {
+      return;
+    }
 
     try {
       final id = anuncio['_id'];
 
-      final respuesta = await http.patch(
-        Uri.parse('$apiUrl/$id/inhabilitar'),
-      );
+      final respuesta = await http
+          .patch(
+            Uri.parse('$_apiUrl/$id/inhabilitar'),
+          )
+          .timeout(const Duration(seconds: 20));
 
       if (respuesta.statusCode != 200) {
-        throw Exception(_mensajeError(respuesta));
+        throw Exception(_errorHttp(respuesta));
       }
+
+      await cargarAnuncios();
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Anuncio inhabilitado correctamente')),
+        const SnackBar(
+          content: Text(
+            'Anuncio inhabilitado correctamente',
+          ),
+        ),
       );
-
-      await cargarAnuncios();
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
+        SnackBar(
+          content: Text('Error: $e'),
+        ),
       );
     }
   }
 
-  static String _mensajeError(http.Response respuesta) {
-    try {
-      final datos = jsonDecode(respuesta.body);
-      return datos['mensaje']?.toString() ??
-          'Error HTTP ${respuesta.statusCode}';
-    } catch (_) {
-      return 'Error HTTP ${respuesta.statusCode}';
-    }
-  }
+  // ==========================================
+  // VER DETALLES CON IMAGEN
+  // ==========================================
 
-  // GYM-82: formato de las fechas registradas en MongoDB.
-  String mostrarFecha(dynamic valor) {
-    if (valor == null || valor.toString().trim().isEmpty) {
-      return 'Sin fecha de vencimiento';
-    }
+  void verDetalles(
+    Map<String, dynamic> anuncio,
+  ) {
+    final imagen = _urlImagen(
+      anuncio['imagen'],
+    );
 
-    final fecha = DateTime.tryParse(valor.toString());
-    if (fecha == null) return 'Fecha no disponible';
-
-    final local = fecha.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/'
-        '${local.month.toString().padLeft(2, '0')}/'
-        '${local.year}';
-  }
-
-  // GYM-82: consulta del contenido completo del anuncio.
-  void verDetalleAnuncio(Map<String, dynamic> anuncio) {
     showDialog<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(anuncio['titulo']?.toString() ?? 'Anuncio'),
-        content: SizedBox(
-          width: 450,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(anuncio['contenido']?.toString() ?? ''),
-                const SizedBox(height: 20),
-                Text(
-                  'Clasificación: ${anuncio['clasificacion'] ?? 'Sin clasificación'}',
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Publicación: ${mostrarFecha(anuncio['fecha_publicacion'])}',
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Vencimiento: ${mostrarFecha(anuncio['fecha_fin'])}',
-                ),
-                const SizedBox(height: 8),
-                Text('Estado: ${anuncio['estado'] ?? 'Desconocido'}'),
-              ],
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(
+            anuncio['titulo']?.toString() ?? 'Anuncio',
+          ),
+          content: SizedBox(
+            width: 480,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (imagen != null) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        imagen,
+                        height: 200,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (
+                          context,
+                          error,
+                          stackTrace,
+                        ) {
+                          return const Text(
+                            'No se pudo cargar la imagen',
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  Text(
+                    anuncio['contenido']?.toString() ?? '',
+                    style: ts(15),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Clasificación: '
+                    '${anuncio['clasificacion'] ?? 'Sin clasificación'}',
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Publicación: '
+                    '${_fecha(anuncio['fecha_publicacion'])}',
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Vencimiento: '
+                    '${_fecha(anuncio['fecha_fin'])}',
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Estado: ${anuncio['estado']}',
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cerrar'),
-          ),
-        ],
-      ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+              },
+              child: const Text('Cerrar'),
+            ),
+          ],
+        );
+      },
     );
   }
+
+  // ==========================================
+  // INTERFAZ PRINCIPAL
+  // ==========================================
 
   @override
   Widget build(BuildContext context) {
@@ -257,17 +386,27 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
             children: [
               Text(
                 'MÚSCULO Y FORMA',
-                style: ts(13, color: AppColors.cobalto, weight: kSemi),
+                style: ts(
+                  13,
+                  weight: kSemi,
+                  color: AppColors.cobalto,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Gestión de anuncios',
-                style: display(36, color: AppColors.indigo),
+                style: display(
+                  36,
+                  color: AppColors.indigo,
+                ),
               ),
               const SizedBox(height: 6),
               Text(
                 'Panel de la Secretaria',
-                style: ts(15, color: AppColors.pizarra),
+                style: ts(
+                  15,
+                  color: AppColors.pizarra,
+                ),
               ),
               const SizedBox(height: 24),
               Wrap(
@@ -275,20 +414,32 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
                 runSpacing: 12,
                 children: [
                   ElevatedButton.icon(
-                    style: _botonPrincipal(),
-                    onPressed: () => abrirFormulario(),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Crear anuncio'),
+                    style: _estiloPrincipal(),
+                    onPressed: () {
+                      abrirFormulario();
+                    },
+                    icon: const Icon(
+                      Icons.add,
+                    ),
+                    label: const Text(
+                      'Crear anuncio',
+                    ),
                   ),
                   OutlinedButton.icon(
                     onPressed: cargarAnuncios,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Actualizar lista'),
+                    icon: const Icon(
+                      Icons.refresh,
+                    ),
+                    label: const Text(
+                      'Actualizar lista',
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
-              Expanded(child: _contenido()),
+              Expanded(
+                child: _contenido(),
+              ),
             ],
           ),
         ),
@@ -298,7 +449,9 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
 
   Widget _contenido() {
     if (cargando) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
     }
 
     if (error != null) {
@@ -306,7 +459,6 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
         child: Text(
           'No se pudieron cargar los anuncios.\n$error',
           textAlign: TextAlign.center,
-          style: ts(15, color: AppColors.pizarra),
         ),
       );
     }
@@ -315,82 +467,119 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
       return Center(
         child: Text(
           'Todavía no hay anuncios registrados.',
-          style: ts(17, color: AppColors.pizarra),
+          style: ts(
+            16,
+            color: AppColors.pizarra,
+          ),
         ),
       );
     }
 
     return ListView.separated(
       itemCount: anuncios.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 14),
+      separatorBuilder: (_, __) {
+        return const SizedBox(height: 14);
+      },
       itemBuilder: (context, index) {
         final anuncio = anuncios[index];
+
         final activo = anuncio['estado'] == 'Activo';
 
         return Container(
           padding: const EdgeInsets.all(20),
-          decoration: _tarjeta(),
+          decoration: BoxDecoration(
+            color: AppColors.card,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.line,
+            ),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: 12,
                 runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   Text(
                     anuncio['titulo']?.toString() ?? '',
-                    style: display(24, color: AppColors.indigo),
+                    style: display(
+                      24,
+                      color: AppColors.indigo,
+                    ),
                   ),
                   Chip(
-                    label: Text(activo ? 'Activo' : 'Inhabilitado'),
+                    label: Text(
+                      activo ? 'Activo' : 'Inhabilitado',
+                    ),
                     backgroundColor: activo
                         ? const Color(0xFFE2F5E9)
                         : const Color(0xFFF0F0F0),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 anuncio['contenido']?.toString() ?? '',
-                style: ts(15, color: AppColors.pizarra),
+                style: ts(
+                  15,
+                  color: AppColors.pizarra,
+                ),
               ),
               const SizedBox(height: 12),
               Text(
-                'Clasificación: ${anuncio['clasificacion'] ?? 'Sin clasificación'}',
-                style: ts(13, color: AppColors.pizarra),
+                'Clasificación: '
+                '${anuncio['clasificacion'] ?? 'Sin clasificación'}',
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
-                'Publicación: ${mostrarFecha(anuncio['fecha_publicacion'])}',
-                style: ts(13, color: AppColors.pizarra),
+                'Publicación: '
+                '${_fecha(anuncio['fecha_publicacion'])}',
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
-                'Vencimiento: ${mostrarFecha(anuncio['fecha_fin'])}',
-                style: ts(13, color: AppColors.pizarra),
+                'Vencimiento: '
+                '${_fecha(anuncio['fecha_fin'])}',
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Wrap(
                 spacing: 10,
                 runSpacing: 8,
                 children: [
                   OutlinedButton.icon(
-                    onPressed: () => verDetalleAnuncio(anuncio),
-                    icon: const Icon(Icons.visibility_outlined),
-                    label: const Text('Ver detalles'),
+                    onPressed: () {
+                      verDetalles(anuncio);
+                    },
+                    icon: const Icon(
+                      Icons.visibility_outlined,
+                    ),
+                    label: const Text(
+                      'Ver detalles',
+                    ),
                   ),
                   OutlinedButton.icon(
-                    onPressed: () => abrirFormulario(anuncio),
-                    icon: const Icon(Icons.edit_outlined),
-                    label: const Text('Editar'),
+                    onPressed: () {
+                      abrirFormulario(anuncio);
+                    },
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                    ),
+                    label: const Text(
+                      'Editar',
+                    ),
                   ),
                   if (activo)
                     OutlinedButton.icon(
-                      onPressed: () => inhabilitar(anuncio),
-                      icon: const Icon(Icons.block),
-                      label: const Text('Inhabilitar'),
+                      onPressed: () {
+                        inhabilitar(anuncio);
+                      },
+                      icon: const Icon(
+                        Icons.block,
+                      ),
+                      label: const Text(
+                        'Inhabilitar',
+                      ),
                     ),
                 ],
               ),
@@ -402,17 +591,21 @@ class _AnunciosScreenState extends State<AnunciosScreen> {
   }
 }
 
+// ==========================================
+// FORMULARIO DE ANUNCIOS
+// ==========================================
+
 class _FormularioAnuncio extends StatefulWidget {
   const _FormularioAnuncio({
-    required this.apiUrl,
     this.anuncio,
   });
 
-  final String apiUrl;
   final Map<String, dynamic>? anuncio;
 
   @override
-  State<_FormularioAnuncio> createState() => _FormularioAnuncioState();
+  State<_FormularioAnuncio> createState() {
+    return _FormularioAnuncioState();
+  }
 }
 
 class _FormularioAnuncioState extends State<_FormularioAnuncio> {
@@ -424,9 +617,15 @@ class _FormularioAnuncioState extends State<_FormularioAnuncio> {
 
   DateTime? fechaPublicacion;
   DateTime? fechaFin;
+
+  Uint8List? imagenBytes;
+  String? nombreImagen;
+
   bool guardando = false;
 
-  bool get editando => widget.anuncio != null;
+  bool get editando {
+    return widget.anuncio != null;
+  }
 
   @override
   void initState() {
@@ -437,20 +636,22 @@ class _FormularioAnuncioState extends State<_FormularioAnuncio> {
     titulo = TextEditingController(
       text: datos['titulo']?.toString() ?? '',
     );
+
     contenido = TextEditingController(
       text: datos['contenido']?.toString() ?? '',
     );
+
     clasificacion = TextEditingController(
       text: datos['clasificacion']?.toString() ?? '',
     );
 
-    fechaPublicacion = DateTime.tryParse(
-      datos['fecha_publicacion']?.toString() ?? '',
-    )?.toLocal();
+    fechaPublicacion = _leerFecha(
+      datos['fecha_publicacion'],
+    );
 
-    fechaFin = DateTime.tryParse(
-      datos['fecha_fin']?.toString() ?? '',
-    )?.toLocal();
+    fechaFin = _leerFecha(
+      datos['fecha_fin'],
+    );
   }
 
   @override
@@ -461,7 +662,21 @@ class _FormularioAnuncioState extends State<_FormularioAnuncio> {
     super.dispose();
   }
 
-  Future<void> seleccionarFecha(bool publicacion) async {
+  void aviso(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensaje),
+      ),
+    );
+  }
+
+  // ==========================================
+  // SELECCIONAR FECHAS
+  // ==========================================
+
+  Future<void> seleccionarFecha(
+    bool publicacion,
+  ) async {
     final actual = publicacion ? fechaPublicacion : fechaFin;
 
     final seleccionada = await showDatePicker(
@@ -471,7 +686,9 @@ class _FormularioAnuncioState extends State<_FormularioAnuncio> {
       lastDate: DateTime(2100),
     );
 
-    if (seleccionada == null || !mounted) return;
+    if (seleccionada == null || !mounted) {
+      return;
+    }
 
     setState(() {
       if (publicacion) {
@@ -482,71 +699,208 @@ class _FormularioAnuncioState extends State<_FormularioAnuncio> {
     });
   }
 
+  // ==========================================
+  // SELECCIONAR IMAGEN
+  // CORREGIDO PARA FILE_PICKER ACTUAL
+  // ==========================================
+
+  Future<void> seleccionarImagen() async {
+    try {
+      final archivo = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: [
+          'jpg',
+          'jpeg',
+          'png',
+          'webp',
+        ],
+      );
+
+      // El usuario canceló la selección.
+      if (archivo == null || !mounted) {
+        return;
+      }
+
+      final extension = archivo.extension?.toLowerCase() ?? '';
+
+      if (![
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+      ].contains(extension)) {
+        aviso(
+          'Solo se permiten imágenes JPG, PNG o WebP',
+        );
+        return;
+      }
+
+      // Comprobar tamaño antes de leer el archivo.
+      final tamano = await archivo.length();
+
+      if (tamano != null && tamano > _maxImagen) {
+        if (!mounted) return;
+
+        aviso(
+          'La imagen no debe superar los 3 MB',
+        );
+        return;
+      }
+
+      // Leer los datos de la imagen.
+      final bytes = await archivo.readAsBytes();
+
+      if (!mounted) return;
+
+      if (bytes.length > _maxImagen) {
+        aviso(
+          'La imagen no debe superar los 3 MB',
+        );
+        return;
+      }
+
+      if (bytes.isEmpty) {
+        aviso(
+          'La imagen seleccionada está vacía',
+        );
+        return;
+      }
+
+      // Guardar imagen para vista previa y envío.
+      setState(() {
+        imagenBytes = bytes;
+        nombreImagen = archivo.name;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      aviso(
+        'Error al seleccionar la imagen: $e',
+      );
+    }
+  }
+
+  // ==========================================
+  // FORMATO DE FECHAS
+  // ==========================================
+
   String formatoFecha(DateTime? fecha) {
-    if (fecha == null) return 'Seleccionar fecha';
+    if (fecha == null) {
+      return 'Seleccionar fecha';
+    }
 
     return '${fecha.day.toString().padLeft(2, '0')}/'
         '${fecha.month.toString().padLeft(2, '0')}/'
         '${fecha.year}';
   }
 
-  Future<void> guardar() async {
-    if (!formKey.currentState!.validate()) return;
+  // ==========================================
+  // GYM-67 / GYM-72
+  // CREAR Y ACTUALIZAR CON IMÁGENES
+  // ==========================================
 
-    if (fechaPublicacion == null ||
-        (fechaFin != null && fechaFin!.isBefore(fechaPublicacion!))) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Revisá las fechas del anuncio')),
+  Future<void> guardar() async {
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (fechaPublicacion == null) {
+      aviso(
+        'Seleccioná la fecha de publicación',
       );
       return;
     }
 
-    setState(() => guardando = true);
+    if (fechaFin != null && fechaFin!.isBefore(fechaPublicacion!)) {
+      aviso(
+        'La fecha de vencimiento es inválida',
+      );
+      return;
+    }
+
+    setState(() {
+      guardando = true;
+    });
 
     try {
-      final datos = <String, dynamic>{
+      final uri = editando
+          ? Uri.parse(
+              '$_apiUrl/${widget.anuncio!['_id']}',
+            )
+          : Uri.parse(_apiUrl);
+
+      // Enviar datos como multipart/form-data.
+      final solicitud = http.MultipartRequest(
+        editando ? 'PUT' : 'POST',
+        uri,
+      );
+
+      solicitud.fields.addAll({
         'titulo': titulo.text.trim(),
         'contenido': contenido.text.trim(),
-        'clasificacion': clasificacion.text.trim().isEmpty
-            ? null
-            : clasificacion.text.trim(),
+        'clasificacion': clasificacion.text.trim(),
         'fecha_publicacion': fechaPublicacion!.toUtc().toIso8601String(),
-        'fecha_fin': fechaFin?.toUtc().toIso8601String(),
-      };
+        'fecha_fin': fechaFin?.toUtc().toIso8601String() ?? '',
+      });
 
-      final uri = editando
-          ? Uri.parse('${widget.apiUrl}/${widget.anuncio!['_id']}')
-          : Uri.parse(widget.apiUrl);
+      // Adjuntar imagen si el usuario seleccionó una.
+      if (imagenBytes != null && nombreImagen != null) {
+        final extension = nombreImagen!.split('.').last.toLowerCase();
 
-      final respuesta = editando
-          ? await http.put(
-              uri,
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode(datos),
-            )
-          : await http.post(
-              uri,
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode(datos),
-            );
+        final tipo = extension == 'png'
+            ? MediaType('image', 'png')
+            : extension == 'webp'
+                ? MediaType('image', 'webp')
+                : MediaType('image', 'jpeg');
 
-      if (respuesta.statusCode != (editando ? 200 : 201)) {
-        final mensaje = jsonDecode(respuesta.body);
-        throw Exception(mensaje['mensaje'] ?? 'Error al guardar');
+        solicitud.files.add(
+          http.MultipartFile.fromBytes(
+            'imagen',
+            imagenBytes!,
+            filename: nombreImagen!,
+            contentType: tipo,
+          ),
+        );
+      }
+
+      // Enviar al backend.
+      final enviada = await solicitud.send().timeout(
+            const Duration(seconds: 60),
+          );
+
+      final respuesta = await http.Response.fromStream(
+        enviada,
+      );
+
+      final esperado = editando ? 200 : 201;
+
+      if (respuesta.statusCode != esperado) {
+        throw Exception(
+          _errorHttp(respuesta),
+        );
       }
 
       if (!mounted) return;
+
       Navigator.pop(context, true);
     } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      if (mounted) {
+        aviso(
+          'Error al guardar el anuncio: $e',
+        );
+      }
     } finally {
-      if (mounted) setState(() => guardando = false);
+      if (mounted) {
+        setState(() {
+          guardando = false;
+        });
+      }
     }
   }
+
+  // ==========================================
+  // INTERFAZ DEL FORMULARIO
+  // ==========================================
 
   @override
   Widget build(BuildContext context) {
@@ -557,7 +911,9 @@ class _FormularioAnuncioState extends State<_FormularioAnuncio> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 520),
+        constraints: const BoxConstraints(
+          maxWidth: 520,
+        ),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Form(
@@ -568,21 +924,30 @@ class _FormularioAnuncioState extends State<_FormularioAnuncio> {
               children: [
                 Text(
                   editando ? 'Editar anuncio' : 'Crear anuncio',
-                  style: display(30, color: AppColors.indigo),
+                  style: display(
+                    30,
+                    color: AppColors.indigo,
+                  ),
                 ),
+
                 const SizedBox(height: 20),
 
                 // TÍTULO
                 TextFormField(
                   controller: titulo,
                   maxLength: 150,
-                  style: ts(15),
-                  cursorColor: AppColors.cobalto,
-                  decoration: _campo('Título'),
-                  validator: (valor) => valor == null || valor.trim().isEmpty
-                      ? 'Ingresá el título'
-                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Título',
+                  ),
+                  validator: (valor) {
+                    if (valor == null || valor.trim().isEmpty) {
+                      return 'Ingresá el título';
+                    }
+
+                    return null;
+                  },
                 ),
+
                 const SizedBox(height: 12),
 
                 // CONTENIDO
@@ -590,54 +955,164 @@ class _FormularioAnuncioState extends State<_FormularioAnuncio> {
                   controller: contenido,
                   maxLength: 5000,
                   maxLines: 4,
-                  style: ts(15),
-                  cursorColor: AppColors.cobalto,
-                  decoration: _campo('Contenido'),
-                  validator: (valor) => valor == null || valor.trim().isEmpty
-                      ? 'Ingresá el contenido'
-                      : null,
+                  decoration: const InputDecoration(
+                    labelText: 'Contenido',
+                  ),
+                  validator: (valor) {
+                    if (valor == null || valor.trim().isEmpty) {
+                      return 'Ingresá el contenido';
+                    }
+
+                    return null;
+                  },
                 ),
+
                 const SizedBox(height: 12),
 
                 // CLASIFICACIÓN
                 TextFormField(
                   controller: clasificacion,
                   maxLength: 60,
-                  style: ts(15),
-                  cursorColor: AppColors.cobalto,
-                  decoration: _campo('Clasificación'),
+                  decoration: const InputDecoration(
+                    labelText: 'Clasificación',
+                  ),
                 ),
-                const SizedBox(height: 12),
+
+                const SizedBox(height: 16),
+
+                // BOTÓN PARA ADJUNTAR IMAGEN
+                OutlinedButton.icon(
+                  onPressed: guardando ? null : seleccionarImagen,
+                  icon: const Icon(
+                    Icons.image_outlined,
+                  ),
+                  label: Text(
+                    imagenBytes == null
+                        ? (editando && widget.anuncio?['imagen'] != null
+                            ? 'Cambiar imagen'
+                            : 'Adjuntar imagen')
+                        : 'Cambiar imagen seleccionada',
+                  ),
+                ),
+
+                if (nombreImagen != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    nombreImagen!,
+                    style: ts(
+                      13,
+                      color: AppColors.pizarra,
+                    ),
+                  ),
+                ],
+
+                // VISTA PREVIA DE IMAGEN NUEVA
+                if (imagenBytes != null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      imagenBytes!,
+                      height: 150,
+                      width: double.infinity,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: guardando
+                        ? null
+                        : () {
+                            setState(() {
+                              imagenBytes = null;
+                              nombreImagen = null;
+                            });
+                          },
+                    child: const Text(
+                      'Quitar selección',
+                    ),
+                  ),
+                ]
+
+                // IMAGEN ANTERIOR EN EDICIÓN
+                else if (editando &&
+                    _urlImagen(
+                          widget.anuncio?['imagen'],
+                        ) !=
+                        null) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      _urlImagen(
+                        widget.anuncio?['imagen'],
+                      )!,
+                      height: 120,
+                      fit: BoxFit.contain,
+                      errorBuilder: (
+                        context,
+                        error,
+                        stackTrace,
+                      ) {
+                        return const Text(
+                          'Imagen anterior no disponible',
+                        );
+                      },
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 16),
 
                 // FECHA DE PUBLICACIÓN
                 OutlinedButton.icon(
-                  onPressed: () => seleccionarFecha(true),
-                  icon: const Icon(Icons.calendar_today),
+                  onPressed: guardando
+                      ? null
+                      : () {
+                          seleccionarFecha(true);
+                        },
+                  icon: const Icon(
+                    Icons.calendar_today,
+                  ),
                   label: Text(
-                    'Publicación: ${formatoFecha(fechaPublicacion)}',
+                    'Publicación: '
+                    '${formatoFecha(fechaPublicacion)}',
                   ),
                 ),
+
                 const SizedBox(height: 8),
 
                 // FECHA DE VENCIMIENTO
                 OutlinedButton.icon(
-                  onPressed: () => seleccionarFecha(false),
-                  icon: const Icon(Icons.event),
+                  onPressed: guardando
+                      ? null
+                      : () {
+                          seleccionarFecha(false);
+                        },
+                  icon: const Icon(
+                    Icons.event,
+                  ),
                   label: Text(
-                    'Vencimiento: ${formatoFecha(fechaFin)}',
+                    'Vencimiento: '
+                    '${formatoFecha(fechaFin)}',
                   ),
                 ),
 
                 TextButton(
-                  onPressed: () {
-                    setState(() => fechaFin = null);
-                  },
-                  child: const Text('Sin fecha de vencimiento'),
+                  onPressed: guardando
+                      ? null
+                      : () {
+                          setState(() {
+                            fechaFin = null;
+                          });
+                        },
+                  child: const Text(
+                    'Sin fecha de vencimiento',
+                  ),
                 ),
 
                 const SizedBox(height: 20),
 
-                // BOTONES
+                // BOTONES DEL FORMULARIO
                 Wrap(
                   spacing: 12,
                   runSpacing: 10,
@@ -645,11 +1120,18 @@ class _FormularioAnuncioState extends State<_FormularioAnuncio> {
                     TextButton(
                       onPressed: guardando
                           ? null
-                          : () => Navigator.pop(context, false),
-                      child: const Text('Cancelar'),
+                          : () {
+                              Navigator.pop(
+                                context,
+                                false,
+                              );
+                            },
+                      child: const Text(
+                        'Cancelar',
+                      ),
                     ),
                     ElevatedButton(
-                      style: _botonPrincipal(),
+                      style: _estiloPrincipal(),
                       onPressed: guardando ? null : guardar,
                       child: Text(
                         guardando
