@@ -59,3 +59,4 @@ backend/uploads/
 # Archivos locales
 *.log
 .DS_Store
+backend/.env.test

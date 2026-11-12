@@ -20,16 +20,27 @@ const upload = multer({
   storage: multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, uploadDir),
     filename: (_req, file, cb) => {
-      const nombre = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${path.extname(file.originalname).toLowerCase()}`;
+      const nombre =
+        `${Date.now()}-${crypto.randomBytes(8).toString('hex')}` +
+        `${path.extname(file.originalname).toLowerCase()}`;
+
       cb(null, nombre);
     }
   }),
-  limits: { fileSize: 3 * 1024 * 1024 },
+  limits: {
+    fileSize: 3 * 1024 * 1024
+  },
   fileFilter: (_req, file, cb) => {
-    const permitidos = ['image/jpeg', 'image/png', 'image/webp'];
+    const permitidos = [
+      'image/jpeg',
+      'image/png',
+      'image/webp'
+    ];
 
     if (!permitidos.includes(file.mimetype)) {
-      return cb(new Error('Solo se permiten imágenes JPG, PNG o WebP'));
+      return cb(new Error(
+        'Solo se permiten imágenes JPG, PNG o WebP'
+      ));
     }
 
     cb(null, true);
@@ -40,6 +51,40 @@ const borrarArchivo = (file) => {
   if (file?.path) {
     fs.unlink(file.path, () => {});
   }
+};
+
+const fechaValida = (fecha) =>
+  fecha instanceof Date &&
+  !Number.isNaN(fecha.getTime());
+
+const esTexto = (valor) =>
+  typeof valor === 'string' && valor.trim().length > 0;
+
+const fechaOpcional = (valor) => {
+  if (valor === undefined || valor === null || valor === '') {
+    return null;
+  }
+
+  return new Date(valor);
+};
+
+const errorRespuesta = (res, error, mensaje) => {
+  if (
+    error.name === 'ValidationError' ||
+    error.name === 'CastError' ||
+    error.code === 121
+  ) {
+    return res.status(400).json({
+      mensaje: 'Los datos no cumplen las validaciones de anuncios',
+      detalle: error.message
+    });
+  }
+
+  console.error(mensaje, error);
+
+  return res.status(500).json({
+    mensaje
+  });
 };
 
 // ==========================================
@@ -56,30 +101,39 @@ router.post('/', upload.single('imagen'), async (req, res) => {
       fecha_fin
     } = req.body;
 
-    if (![titulo, contenido, fecha_publicacion, fecha_fin]
-      .every(v => typeof v === 'string' && v.trim())) {
+    // Campos obligatorios
+    if (
+      !esTexto(titulo) ||
+      !esTexto(contenido) ||
+      !esTexto(fecha_publicacion)
+    ) {
       borrarArchivo(req.file);
 
       return res.status(400).json({
-        mensaje: 'Complete título, contenido y fechas'
+        mensaje: 'Complete título, contenido y fecha de publicación'
       });
     }
 
-    if (clasificacion !== undefined &&
-        (typeof clasificacion !== 'string' || !clasificacion.trim())) {
+    // Clasificación opcional
+    if (
+      clasificacion !== undefined &&
+      clasificacion !== null &&
+      typeof clasificacion !== 'string'
+    ) {
       borrarArchivo(req.file);
+
       return res.status(400).json({
         mensaje: 'La clasificación no es válida'
       });
     }
 
     const inicio = new Date(fecha_publicacion);
-    const fin = new Date(fecha_fin);
+    const fin = fechaOpcional(fecha_fin);
 
     if (
-      Number.isNaN(inicio.getTime()) ||
-      Number.isNaN(fin.getTime()) ||
-      fin < inicio
+      !fechaValida(inicio) ||
+      (fin !== null && !fechaValida(fin)) ||
+      (fin !== null && fin < inicio)
     ) {
       borrarArchivo(req.file);
 
@@ -91,32 +145,31 @@ router.post('/', upload.single('imagen'), async (req, res) => {
     const anuncio = await Anuncio.create({
       titulo: titulo.trim(),
       contenido: contenido.trim(),
-      clasificacion: clasificacion?.trim() || null,
+      clasificacion:
+        typeof clasificacion === 'string'
+          ? clasificacion.trim() || null
+          : null,
       fecha_publicacion: inicio,
       fecha_fin: fin,
       estado: 'Activo',
-      imagen: req.file ? `/uploads/${req.file.filename}` : null
+      imagen: req.file
+        ? `/uploads/${req.file.filename}`
+        : null
     });
 
-    res.status(201).json({
-      mensaje: 'Anuncio publicado correctamente',
+    return res.status(201).json({
+      mensaje: 'Anuncio creado correctamente',
       anuncio
     });
 
   } catch (error) {
     borrarArchivo(req.file);
 
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        mensaje: error.message
-      });
-    }
-
-    console.error('Error al crear anuncio:', error);
-
-    res.status(500).json({
-      mensaje: 'No se pudo crear el anuncio'
-    });
+    return errorRespuesta(
+      res,
+      error,
+      'No se pudo crear el anuncio'
+    );
   }
 });
 
@@ -135,16 +188,18 @@ router.get('/publicados', async (_req, res) => {
         { fecha_fin: { $gte: ahora } },
         { fecha_fin: null }
       ]
-    }).sort({ fecha_publicacion: -1 });
+    }).sort({
+      fecha_publicacion: -1
+    });
 
-    res.json(anuncios);
+    return res.json(anuncios);
 
   } catch (error) {
-    console.error('Error al listar anuncios:', error);
-
-    res.status(500).json({
-      mensaje: 'No se pudieron consultar los anuncios'
-    });
+    return errorRespuesta(
+      res,
+      error,
+      'No se pudieron consultar los anuncios publicados'
+    );
   }
 });
 
@@ -154,17 +209,18 @@ router.get('/publicados', async (_req, res) => {
 
 router.get('/', async (_req, res) => {
   try {
-    const anuncios = await Anuncio.find()
-      .sort({ fecha_publicacion: -1 });
+    const anuncios = await Anuncio.find().sort({
+      fecha_publicacion: -1
+    });
 
-    res.json(anuncios);
+    return res.json(anuncios);
 
   } catch (error) {
-    console.error('Error al consultar anuncios:', error);
-
-    res.status(500).json({
-      mensaje: 'No se pudieron consultar los anuncios'
-    });
+    return errorRespuesta(
+      res,
+      error,
+      'No se pudieron consultar los anuncios'
+    );
   }
 });
 
@@ -202,20 +258,23 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
       fecha_fin
     } = req.body;
 
-    // Validar campos de texto
-    for (const valor of [titulo, contenido]) {
-      if (valor !== undefined &&
-          (typeof valor !== 'string' || !valor.trim())) {
-        borrarArchivo(req.file);
+    // Validar textos enviados
+    if (
+      (titulo !== undefined && !esTexto(titulo)) ||
+      (contenido !== undefined && !esTexto(contenido))
+    ) {
+      borrarArchivo(req.file);
 
-        return res.status(400).json({
-          mensaje: 'El título y contenido no pueden estar vacíos'
-        });
-      }
+      return res.status(400).json({
+        mensaje: 'El título y contenido no pueden estar vacíos'
+      });
     }
 
-    if (clasificacion !== undefined &&
-        (typeof clasificacion !== 'string' || !clasificacion.trim())) {
+    if (
+      clasificacion !== undefined &&
+      clasificacion !== null &&
+      typeof clasificacion !== 'string'
+    ) {
       borrarArchivo(req.file);
 
       return res.status(400).json({
@@ -223,18 +282,19 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
       });
     }
 
+    // Calcular fechas nuevas
     const inicio = fecha_publicacion !== undefined
       ? new Date(fecha_publicacion)
       : anuncio.fecha_publicacion;
 
     const fin = fecha_fin !== undefined
-      ? new Date(fecha_fin)
+      ? fechaOpcional(fecha_fin)
       : anuncio.fecha_fin;
 
     if (
-      Number.isNaN(inicio.getTime()) ||
-      (fin && Number.isNaN(fin.getTime())) ||
-      (fin && fin < inicio)
+      !fechaValida(inicio) ||
+      (fin !== null && !fechaValida(fin)) ||
+      (fin !== null && fin < inicio)
     ) {
       borrarArchivo(req.file);
 
@@ -243,10 +303,20 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
       });
     }
 
-    if (titulo !== undefined) anuncio.titulo = titulo.trim();
-    if (contenido !== undefined) anuncio.contenido = contenido.trim();
+    // Actualizar campos
+    if (titulo !== undefined) {
+      anuncio.titulo = titulo.trim();
+    }
+
+    if (contenido !== undefined) {
+      anuncio.contenido = contenido.trim();
+    }
+
     if (clasificacion !== undefined) {
-      anuncio.clasificacion = clasificacion.trim();
+      anuncio.clasificacion =
+        typeof clasificacion === 'string'
+          ? clasificacion.trim() || null
+          : null;
     }
 
     anuncio.fecha_publicacion = inicio;
@@ -260,15 +330,20 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
 
     await anuncio.save();
 
-    // Eliminar imagen anterior después de guardar
-    if (req.file && imagenAnterior?.startsWith('/uploads/')) {
+    // Eliminar imagen anterior solamente después
+    // de guardar el anuncio correctamente.
+    if (
+      req.file &&
+      typeof imagenAnterior === 'string' &&
+      imagenAnterior.startsWith('/uploads/')
+    ) {
       fs.unlink(
         path.join(uploadDir, path.basename(imagenAnterior)),
         () => {}
       );
     }
 
-    res.json({
+    return res.json({
       mensaje: 'Anuncio actualizado correctamente',
       anuncio
     });
@@ -276,17 +351,11 @@ router.put('/:id', upload.single('imagen'), async (req, res) => {
   } catch (error) {
     borrarArchivo(req.file);
 
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        mensaje: error.message
-      });
-    }
-
-    console.error('Error al actualizar anuncio:', error);
-
-    res.status(500).json({
-      mensaje: 'No se pudo actualizar el anuncio'
-    });
+    return errorRespuesta(
+      res,
+      error,
+      'No se pudo actualizar el anuncio'
+    );
   }
 });
 
@@ -314,26 +383,26 @@ router.patch('/:id/inhabilitar', async (req, res) => {
 
     if (anuncio.estado === 'Inhabilitado') {
       return res.status(409).json({
-        mensaje: 'El anuncio ya está inhabilitado'
+        mensaje: 'El anuncio ya se encuentra inhabilitado'
       });
     }
 
-    // Cambiar estado sin eliminar el documento
+    // Inhabilitación lógica: no elimina el documento
     anuncio.estado = 'Inhabilitado';
 
     await anuncio.save();
 
-    res.json({
+    return res.json({
       mensaje: 'Anuncio inhabilitado correctamente',
       anuncio
     });
 
   } catch (error) {
-    console.error('Error al inhabilitar anuncio:', error);
-
-    res.status(500).json({
-      mensaje: 'No se pudo inhabilitar el anuncio'
-    });
+    return errorRespuesta(
+      res,
+      error,
+      'No se pudo inhabilitar el anuncio'
+    );
   }
 });
 
@@ -350,7 +419,7 @@ router.use((err, _req, res, _next) => {
     });
   }
 
-  res.status(400).json({
+  return res.status(400).json({
     mensaje: err.message || 'Archivo inválido'
   });
 });

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'core/theme.dart';
+import 'screens/anuncios_screen.dart';
 import 'screens/coach_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_screen.dart';
@@ -17,11 +18,32 @@ final _router = GoRouter(
       builder: (context, state, child) =>
           AppShell(location: state.uri.path, child: child),
       routes: [
-        GoRoute(path: '/', pageBuilder: (c, s) => _page(const HomeScreen())),
-        GoRoute(path: '/rutinas', pageBuilder: (c, s) => _page(const RoutinesScreen())),
-        GoRoute(path: '/progreso', pageBuilder: (c, s) => _page(const ProgressScreen())),
-        GoRoute(path: '/perfil', pageBuilder: (c, s) => _page(const ProfileScreen())),
-        GoRoute(path: '/coach', pageBuilder: (c, s) => _page(const CoachScreen())),
+        GoRoute(
+          path: '/',
+          pageBuilder: (c, s) => _page(const HomeScreen()),
+        ),
+        GoRoute(
+          path: '/rutinas',
+          pageBuilder: (c, s) => _page(const RoutinesScreen()),
+        ),
+        GoRoute(
+          path: '/progreso',
+          pageBuilder: (c, s) => _page(const ProgressScreen()),
+        ),
+        GoRoute(
+          path: '/perfil',
+          pageBuilder: (c, s) => _page(const ProfileScreen()),
+        ),
+        GoRoute(
+          path: '/coach',
+          pageBuilder: (c, s) => _page(const CoachScreen()),
+        ),
+
+        // SPRINT 3 - GESTIÓN DE ANUNCIOS
+        GoRoute(
+          path: '/anuncios',
+          pageBuilder: (c, s) => _page(const AnunciosScreen()),
+        ),
       ],
     ),
   ],
