@@ -1,6 +1,6 @@
 # Músculo y Forma (GMYF) · Reglas del proyecto
 
-App para gimnasio: **Flutter** (móvil y web) + **API** propia + **MongoDB** (base `gimnasio`, script en `database/gimnasio_init.js`).
+App para gimnasio: **Flutter** (móvil y web) + **API** propia (repo privado `GYM-API`, desplegada en Render) + **MongoDB Atlas** (base `gimnasio`, script en `GYM-API/database/gimnasio_init.js`).
 Estas reglas son obligatorias en todo código nuevo o modificado. Si una regla no se puede cumplir, se deja anotado el motivo en el PR o en un comentario `// REGLA: ...`.
 
 Cada regla indica dónde aplica: **[App]** Flutter · **[API]** backend · **[BD]** MongoDB · **[Web]** build web de Flutter / sitio.
@@ -82,7 +82,7 @@ src/
 ## 5. Base de datos (MongoDB)
 
 18. **Corregir consultas N+1** [API][BD] — No consultar dentro de un ciclo. Para traer datos relacionados (el coach de cada cliente, los ejercicios de una rutina) se usa `$in` con todos los IDs de una vez o `$lookup` en un *aggregation pipeline*.
-19. **Índices para las consultas más comunes** [BD] — Cada consulta frecuente nueva debe tener un índice que la cubra; se agrega al script `database/gimnasio_init.js` y se revisa con `explain()` (que use `IXSCAN`, no `COLLSCAN`).
+19. **Índices para las consultas más comunes** [BD] — Cada consulta frecuente nueva debe tener un índice que la cubra; se agrega al script `database/gimnasio_init.js` del repo `GYM-API` y se revisa con `explain()` (que use `IXSCAN`, no `COLLSCAN`).
 20. **Pedir solo los campos necesarios** [API][BD] — Toda consulta lleva *projection*. Nunca se devuelven campos sensibles como `contrasena` o `historial_cambios`, ni datos que la pantalla no usa.
 
 ## 6. Web y dependencias
