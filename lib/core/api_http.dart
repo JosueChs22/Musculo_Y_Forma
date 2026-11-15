@@ -62,7 +62,13 @@ class ApiHttp {
     // El token venció o la cuenta ya no está activa: se cierra la sesión en toda la app
     if (res.statusCode == 401 && conToken) ApiSession.alExpirar?.call();
 
-    if (res.statusCode >= 400) {
+    if (res.statusCode == 304) {
+      throw const ApiException(
+        'El servidor devolvió una respuesta sin datos. Inténtalo de nuevo.',
+      );
+    }
+
+    if (res.statusCode < 200 || res.statusCode >= 300) {
       // La API responde {error: '...'} o, si falla la validación, {errors: [...]}
       final errores = json['errors'];
       throw ApiException(

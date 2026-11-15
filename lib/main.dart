@@ -24,20 +24,34 @@ import 'features/rutinas/controllers/rutinas_controller.dart';
 import 'features/rutinas/services/rutinas_api_service.dart';
 import 'features/rutinas/services/rutinas_service.dart';
 import 'features/secretaria/controllers/clases_controller.dart';
+import 'features/secretaria/controllers/clientes_controller.dart';
 import 'features/secretaria/services/clases_api_service.dart';
 import 'features/secretaria/services/clases_service.dart';
+import 'features/secretaria/services/citas_api_service.dart';
+import 'features/secretaria/services/citas_service.dart';
+import 'features/secretaria/services/clientes_api_service.dart';
+import 'features/secretaria/services/clientes_service.dart';
 
 /// Servicios de la app (REGLA 0). Todos hablan con la API; en pruebas se pueden
 /// pasar implementaciones mock por el constructor.
 class AppServices {
-  const AppServices({PerfilService? perfil, RutinasService? rutinas, ProgresoService? progreso})
-      : _perfil = perfil,
+  const AppServices({
+    PerfilService? perfil,
+    RutinasService? rutinas,
+    ProgresoService? progreso,
+    ClientesService? clientes,
+    CitasService? citas,
+  })  : _perfil = perfil,
         _rutinas = rutinas,
-        _progreso = progreso;
+        _progreso = progreso,
+        _clientes = clientes,
+        _citas = citas;
 
   final PerfilService? _perfil;
   final RutinasService? _rutinas;
   final ProgresoService? _progreso;
+  final ClientesService? _clientes;
+  final CitasService? _citas;
 
   PerfilService get perfil => _perfil ?? PerfilApiService();
 
@@ -46,6 +60,10 @@ class AppServices {
   ProgresoService get progreso => _progreso ?? ProgresoApiService();
 
   ClasesService get clases => ClasesApiService();
+
+  CitasService get citas => _citas ?? CitasApiService();
+
+  ClientesService get clientes => _clientes ?? ClientesApiService();
 
   AuthService get auth => AuthApiService();
 
@@ -71,9 +89,11 @@ class AppRoot extends StatelessWidget {
     return MultiProvider(
       providers: [
         // Sesión del usuario (login). El router la usa para proteger las rutas.
-        ChangeNotifierProvider(create: (_) => AuthController(services.auth)..load()),
+        ChangeNotifierProvider(
+            create: (_) => AuthController(services.auth)..load()),
         // Panel del Administrador: la vista llama a load() al abrirse (necesita token).
-        ChangeNotifierProvider(create: (_) => UsuariosController(services.usuarios)),
+        ChangeNotifierProvider(
+            create: (_) => UsuariosController(services.usuarios)),
         // Datos del usuario con sesión: se recargan al cambiar de usuario y se borran al salir
         ChangeNotifierProxyProvider<AuthController, PerfilController>(
           create: (_) => PerfilController(services.perfil),
@@ -90,10 +110,16 @@ class AppRoot extends StatelessWidget {
         // Panel del Entrenador: catálogo de ejercicios y planes. Las vistas llaman a load() al abrirse (necesitan el token).
         Provider<EjerciciosService>(create: (_) => services.ejercicios),
         Provider<PlanesService>(create: (_) => services.planes),
-        ChangeNotifierProvider(create: (c) => EjerciciosController(c.read<EjerciciosService>())),
-        ChangeNotifierProvider(create: (c) => PlanesController(c.read<PlanesService>())),
+        ChangeNotifierProvider(
+            create: (c) => EjerciciosController(c.read<EjerciciosService>())),
+        ChangeNotifierProvider(
+            create: (c) => PlanesController(c.read<PlanesService>())),
         // Panel de Secretaria: se carga cuando se abre la vista.
-        ChangeNotifierProvider(create: (_) => ClasesController(services.clases)),
+        ChangeNotifierProvider(
+            create: (_) => ClasesController(services.clases)),
+        ChangeNotifierProvider(
+            create: (_) => ClientesController(services.clientes)),
+        Provider<CitasService>(create: (_) => services.citas),
       ],
       child: const GmyfApp(),
     );

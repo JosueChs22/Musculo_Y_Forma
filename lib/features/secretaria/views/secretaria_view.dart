@@ -7,10 +7,13 @@ import '../../../core/widgets.dart';
 import '../controllers/clases_controller.dart';
 import '../models/clase.dart';
 import '../models/horario_clase.dart';
+import 'widgets/agendar_cita_section.dart';
+import 'widgets/consultar_citas_section.dart';
 import 'widgets/clase_form_dialog.dart';
+import 'widgets/gestion_clientes_section.dart';
 import 'widgets/horario_form_dialog.dart';
 
-/// Panel de la Secretaria: gestión de Clases y Horarios (RF-013/018/023/028 y RF-015/020/025/030).
+/// Panel de Secretaría: clases, clientes y agenda de citas.
 class SecretariaView extends StatefulWidget {
   const SecretariaView({super.key});
 
@@ -19,6 +22,8 @@ class SecretariaView extends StatefulWidget {
 }
 
 class _SecretariaViewState extends State<SecretariaView> {
+  _SeccionSecretaria _seccion = _SeccionSecretaria.horarios;
+
   @override
   void initState() {
     super.initState();
@@ -31,10 +36,151 @@ class _SecretariaViewState extends State<SecretariaView> {
   @override
   Widget build(BuildContext context) {
     return SliverPage(slivers: [
-      const Box(_Header(), gapAfter: 28),
-      const Box(_ClasesSection()),
+      const Box(_Header(), gapAfter: 16),
+      Box(
+        Panel(
+          padding: const EdgeInsets.all(8),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth < 850) {
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _SeccionChip(
+                      label: 'Horarios',
+                      icon: Icons.schedule,
+                      selected: _seccion == _SeccionSecretaria.horarios,
+                      onSelected: () => setState(
+                          () => _seccion = _SeccionSecretaria.horarios),
+                    ),
+                    _SeccionChip(
+                      label: 'Agendar cita',
+                      icon: Icons.event_available_outlined,
+                      selected: _seccion == _SeccionSecretaria.agendarCita,
+                      onSelected: () => setState(
+                          () => _seccion = _SeccionSecretaria.agendarCita),
+                    ),
+                    _SeccionChip(
+                      label: 'Consultar citas',
+                      icon: Icons.event_note_outlined,
+                      selected: _seccion == _SeccionSecretaria.consultarCitas,
+                      onSelected: () => setState(
+                          () => _seccion = _SeccionSecretaria.consultarCitas),
+                    ),
+                    _SeccionChip(
+                      label: 'Gestionar cliente',
+                      icon: Icons.groups_outlined,
+                      selected: _seccion == _SeccionSecretaria.gestionarCliente,
+                      onSelected: () => setState(
+                          () => _seccion = _SeccionSecretaria.gestionarCliente),
+                    ),
+                  ],
+                );
+              }
+              return SegmentedButton<_SeccionSecretaria>(
+                segments: const [
+                  ButtonSegment(
+                    value: _SeccionSecretaria.horarios,
+                    label: Text('Horarios'),
+                    icon: Icon(Icons.schedule),
+                  ),
+                  ButtonSegment(
+                    value: _SeccionSecretaria.agendarCita,
+                    label: Text('Agendar cita'),
+                    icon: Icon(Icons.event_available_outlined),
+                  ),
+                  ButtonSegment(
+                    value: _SeccionSecretaria.consultarCitas,
+                    label: Text('Consultar citas'),
+                    icon: Icon(Icons.event_note_outlined),
+                  ),
+                  ButtonSegment(
+                    value: _SeccionSecretaria.gestionarCliente,
+                    label: Text('Gestionar cliente'),
+                    icon: Icon(Icons.groups_outlined),
+                  ),
+                ],
+                selected: {_seccion},
+                showSelectedIcon: false,
+                onSelectionChanged: (seleccion) =>
+                    setState(() => _seccion = seleccion.first),
+                style: SegmentedButton.styleFrom(
+                  selectedBackgroundColor: AppColors.indigo,
+                  selectedForegroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+              );
+            },
+          ),
+        ),
+        gapAfter: 24,
+      ),
+      Box(
+        Visibility(
+          visible: _seccion == _SeccionSecretaria.horarios,
+          maintainState: true,
+          child: const _ClasesSection(),
+        ),
+      ),
+      Box(
+        Visibility(
+          visible: _seccion == _SeccionSecretaria.gestionarCliente,
+          maintainState: true,
+          child: const GestionClientesSection(),
+        ),
+      ),
+      Box(
+        Visibility(
+          visible: _seccion == _SeccionSecretaria.agendarCita,
+          maintainState: true,
+          child: const AgendarCitaSection(),
+        ),
+      ),
+      Box(
+        Visibility(
+          visible: _seccion == _SeccionSecretaria.consultarCitas,
+          maintainState: true,
+          child: const ConsultarCitasSection(),
+        ),
+      ),
     ]);
   }
+}
+
+enum _SeccionSecretaria {
+  horarios,
+  gestionarCliente,
+  agendarCita,
+  consultarCitas,
+}
+
+class _SeccionChip extends StatelessWidget {
+  const _SeccionChip({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) => ChoiceChip(
+        avatar: Icon(icon,
+            size: 18, color: selected ? Colors.white : AppColors.pizarra),
+        label: Text(label),
+        selected: selected,
+        showCheckmark: false,
+        onSelected: (_) => onSelected(),
+        selectedColor: AppColors.indigo,
+        side: BorderSide.none,
+        labelStyle: ts(14,
+            weight: kSemi, color: selected ? Colors.white : AppColors.ink),
+      );
 }
 
 class _Header extends StatelessWidget {
@@ -43,8 +189,8 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const PageTitle(
         eyebrow: 'Panel de Secretaria',
-        title: 'Clases y Horarios',
-        subtitle: 'Gestión de clases activas e inhabilitadas.',
+        title: 'Gestión de Secretaría',
+        subtitle: 'Clases, horarios, citas y clientes.',
       );
 }
 
@@ -57,13 +203,16 @@ class _ClasesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final loading = context.select<ClasesController, bool>((c) => c.loading);
     final error = context.select<ClasesController, String?>((c) => c.error);
-    final clases = context.select<ClasesController, List<Clase>>((c) => c.clases);
+    final clases =
+        context.select<ClasesController, List<Clase>>((c) => c.clases);
 
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Expanded(child: SectionHeader(eyebrow: 'Catálogo activo', title: 'Clases')),
+          const Expanded(
+              child:
+                  SectionHeader(eyebrow: 'Catálogo activo', title: 'Clases')),
           const SizedBox(width: 16),
           PrimaryButton(
             label: 'Nueva clase',
@@ -110,7 +259,8 @@ class _ClasesSection extends StatelessWidget {
     final result = await ClaseFormDialog.show(context);
     if (result == null || !context.mounted) return;
     final ctrl = context.read<ClasesController>();
-    await ctrl.crearClase(nombre: result.nombre, descripcion: result.descripcion);
+    await ctrl.crearClase(
+        nombre: result.nombre, descripcion: result.descripcion);
     if (!context.mounted) return;
     _mostrarSnackError(context);
   }
@@ -134,32 +284,43 @@ class _ClaseCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 18, 12, 18),
             decoration: BoxDecoration(
               color: clase.activa ? AppColors.indigo : AppColors.niebla,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(17)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(17)),
             ),
             child: Row(children: [
               Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(
-                    clase.nombre.toUpperCase(),
-                    style: display(24, color: clase.activa ? Colors.white : AppColors.pizarra),
-                  ),
-                  if (clase.descripcion != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      clase.descripcion!,
-                      style: ts(14, color: clase.activa ? AppColors.onIndigoMuted : AppColors.pizarra),
-                    ),
-                  ],
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        clase.nombre.toUpperCase(),
+                        style: display(24,
+                            color: clase.activa
+                                ? Colors.white
+                                : AppColors.pizarra),
+                      ),
+                      if (clase.descripcion != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          clase.descripcion!,
+                          style: ts(14,
+                              color: clase.activa
+                                  ? AppColors.onIndigoMuted
+                                  : AppColors.pizarra),
+                        ),
+                      ],
+                    ]),
               ),
               if (!clase.activa)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFBE9E7),
                     borderRadius: BorderRadius.circular(99),
                   ),
-                  child: Text('Inhabilitada', style: ts(12, weight: kSemi, color: AppColors.danger)),
+                  child: Text('Inhabilitada',
+                      style: ts(12, weight: kSemi, color: AppColors.danger)),
                 ),
               _ClaseMenu(clase: clase),
             ]),
@@ -174,14 +335,18 @@ class _ClaseCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Horarios de atención', style: ts(13, weight: kSemi, color: AppColors.pizarra)),
+                    Text('Horarios de atención',
+                        style: ts(13, weight: kSemi, color: AppColors.pizarra)),
                     if (clase.activa)
                       TextButton.icon(
                         onPressed: () => _agregarHorario(context, clase),
                         icon: const Icon(Icons.add, size: 15),
-                        label: Text('Agregar horario', style: ts(13, weight: kSemi, color: AppColors.cobalto)),
+                        label: Text('Agregar horario',
+                            style: ts(13,
+                                weight: kSemi, color: AppColors.cobalto)),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           minimumSize: Size.zero,
                         ),
                       ),
@@ -191,7 +356,8 @@ class _ClaseCard extends StatelessWidget {
                 if (clase.horarios.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text('Sin horarios registrados.', style: ts(13, color: AppColors.pizarra)),
+                    child: Text('Sin horarios registrados.',
+                        style: ts(13, color: AppColors.pizarra)),
                   )
                 else
                   // REGLA 4: conjunto acotado (horarios de una clase).
@@ -203,9 +369,10 @@ class _ClaseCard extends StatelessWidget {
                           onEditar: clase.activa
                               ? () => _editarHorario(context, clase, i)
                               : null,
-                          onInhabilitar: (clase.activa && clase.horarios[i].activo)
-                              ? () => _inhabilitarHorario(context, clase, i)
-                              : null,
+                          onInhabilitar:
+                              (clase.activa && clase.horarios[i].activo)
+                                  ? () => _inhabilitarHorario(context, clase, i)
+                                  : null,
                         ),
                     ],
                   ),
@@ -226,8 +393,10 @@ class _ClaseCard extends StatelessWidget {
     _mostrarSnackError(context);
   }
 
-  Future<void> _editarHorario(BuildContext context, Clase clase, int index) async {
-    final horario = await HorarioFormDialog.show(context, horario: clase.horarios[index]);
+  Future<void> _editarHorario(
+      BuildContext context, Clase clase, int index) async {
+    final horario =
+        await HorarioFormDialog.show(context, horario: clase.horarios[index]);
     if (horario == null || !context.mounted) return;
     final ctrl = context.read<ClasesController>();
     await ctrl.actualizarHorario(clase.id, index, horario);
@@ -235,7 +404,8 @@ class _ClaseCard extends StatelessWidget {
     _mostrarSnackError(context);
   }
 
-  Future<void> _inhabilitarHorario(BuildContext context, Clase clase, int index) async {
+  Future<void> _inhabilitarHorario(
+      BuildContext context, Clase clase, int index) async {
     final confirmar = await _confirmarDialog(
       context,
       titulo: 'Inhabilitar horario',
@@ -284,7 +454,8 @@ class _ClaseMenu extends StatelessWidget {
           PopupMenuItem(
             value: 'reactivar',
             child: Row(children: [
-              const Icon(Icons.check_circle_outline, size: 18, color: AppColors.success),
+              const Icon(Icons.check_circle_outline,
+                  size: 18, color: AppColors.success),
               const SizedBox(width: 10),
               Text('Reactivar', style: ts(14, color: AppColors.success)),
             ]),
@@ -298,14 +469,16 @@ class _ClaseMenu extends StatelessWidget {
       final result = await ClaseFormDialog.show(context, clase: clase);
       if (result == null || !context.mounted) return;
       final ctrl = context.read<ClasesController>();
-      await ctrl.actualizarClase(clase.id, nombre: result.nombre, descripcion: result.descripcion);
+      await ctrl.actualizarClase(clase.id,
+          nombre: result.nombre, descripcion: result.descripcion);
       if (!context.mounted) return;
       _mostrarSnackError(context);
     } else if (accion == 'inhabilitar') {
       final confirmar = await _confirmarDialog(
         context,
         titulo: 'Inhabilitar clase',
-        mensaje: '¿Inhabilitar la clase "${clase.nombre}"? Todos sus horarios quedarán inactivos.',
+        mensaje:
+            '¿Inhabilitar la clase "${clase.nombre}"? Todos sus horarios quedarán inactivos.',
       );
       if (!confirmar || !context.mounted) return;
       final ctrl = context.read<ClasesController>();
@@ -351,12 +524,18 @@ class _HorarioRow extends StatelessWidget {
         ),
         child: Row(children: [
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(horario.diasLabel,
-                  style: ts(14, weight: kSemi,
-                      color: horario.activo ? AppColors.ink : AppColors.pizarra)),
+                  style: ts(14,
+                      weight: kSemi,
+                      color:
+                          horario.activo ? AppColors.ink : AppColors.pizarra)),
               Text(horario.rangoHora,
-                  style: ts(13, color: horario.activo ? AppColors.pizarra : AppColors.pizarra)),
+                  style: ts(13,
+                      color: horario.activo
+                          ? AppColors.pizarra
+                          : AppColors.pizarra)),
             ]),
           ),
           _EstadoPill(activo: horario.activo, small: true),
@@ -407,14 +586,17 @@ class _EstadoPill extends StatelessWidget {
         child: Text(
           activo ? 'Activo' : 'Inhabilitado',
           style: ts(small ? 11 : 12,
-              weight: kSemi, color: activo ? AppColors.success : AppColors.danger),
+              weight: kSemi,
+              color: activo ? AppColors.success : AppColors.danger),
         ),
       );
 }
 
 class _EmptyState extends StatelessWidget {
   const _EmptyState(
-      {required this.mensaje, required this.onAction, required this.labelAction});
+      {required this.mensaje,
+      required this.onAction,
+      required this.labelAction});
   final String mensaje;
   final VoidCallback onAction;
   final String labelAction;
@@ -422,7 +604,8 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Panel(
         child: Column(children: [
-          const Icon(Icons.event_note_outlined, size: 48, color: AppColors.pizarra),
+          const Icon(Icons.event_note_outlined,
+              size: 48, color: AppColors.pizarra),
           const SizedBox(height: 12),
           Text(mensaje, style: ts(15, color: AppColors.pizarra)),
           const SizedBox(height: 16),
@@ -447,15 +630,18 @@ Future<bool> _confirmarDialog(
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
-          child: Text('Cancelar', style: ts(14, weight: kSemi, color: AppColors.pizarra)),
+          child: Text('Cancelar',
+              style: ts(14, weight: kSemi, color: AppColors.pizarra)),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(ctx, true),
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.danger,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
-          child: Text('Confirmar', style: ts(14, weight: kSemi, color: Colors.white)),
+          child: Text('Confirmar',
+              style: ts(14, weight: kSemi, color: Colors.white)),
         ),
       ],
     ),
