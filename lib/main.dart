@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'app.dart';
+import 'features/admin/controllers/reglamentos_controller.dart';
 import 'features/admin/controllers/usuarios_controller.dart';
+import 'features/admin/services/reglamentos_api_service.dart';
+import 'features/admin/services/reglamentos_service.dart';
 import 'features/admin/services/usuarios_api_service.dart';
 import 'features/admin/services/usuarios_service.dart';
 import 'features/auth/controllers/auth_controller.dart';
@@ -69,6 +72,8 @@ class AppServices {
 
   UsuariosService get usuarios => UsuariosApiService();
 
+  ReglamentosService get reglamentos => ReglamentosApiService();
+
   EjerciciosService get ejercicios => EjerciciosApiService();
 
   PlanesService get planes => PlanesApiService();
@@ -94,6 +99,9 @@ class AppRoot extends StatelessWidget {
         // Panel del Administrador: la vista llama a load() al abrirse (necesita token).
         ChangeNotifierProvider(
             create: (_) => UsuariosController(services.usuarios)),
+        // Reglamento del gimnasio (Administrador): la vista llama a load() al abrirse.
+        ChangeNotifierProvider(
+            create: (_) => ReglamentosController(services.reglamentos)),
         // Datos del usuario con sesión: se recargan al cambiar de usuario y se borran al salir
         ChangeNotifierProxyProvider<AuthController, PerfilController>(
           create: (_) => PerfilController(services.perfil),

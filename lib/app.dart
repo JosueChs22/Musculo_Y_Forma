@@ -6,6 +6,7 @@ import 'core/app_shell.dart';
 import 'core/brand.dart';
 import 'core/permisos.dart';
 import 'core/theme.dart';
+import 'features/admin/views/reglamentos_view.dart';
 import 'features/admin/views/usuarios_view.dart';
 import 'features/auth/controllers/auth_controller.dart';
 import 'features/auth/views/login_view.dart';
@@ -88,6 +89,7 @@ GoRouter buildRouter(AuthController auth, {String inicial = '/'}) => GoRouter(
             ),
             GoRoute(path: '/secretaria', pageBuilder: (c, s) => _page(s, const SecretariaView())),
             GoRoute(path: '/admin', pageBuilder: (c, s) => _page(s, const UsuariosView())),
+            GoRoute(path: '/admin/reglamentos', pageBuilder: (c, s) => _page(s, const ReglamentosView())),
           ],
         ),
       ],

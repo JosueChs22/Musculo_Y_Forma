@@ -50,11 +50,20 @@ class _UsuariosViewState extends State<UsuariosView> {
       Box(
         Align(
           alignment: Alignment.centerLeft,
-          child: PrimaryButton(
-            label: 'Nuevo usuario',
-            icon: Icons.person_add_alt_1,
-            onPressed: () => _nuevoUsuario(context),
-          ),
+          child: Wrap(spacing: 12, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+            PrimaryButton(
+              label: 'Nuevo usuario',
+              icon: Icons.person_add_alt_1,
+              onPressed: () => _nuevoUsuario(context),
+            ),
+            // Reglamento del gimnasio (RF-097, 098, 101, 102)
+            TextButton.icon(
+              onPressed: () => context.go('/admin/reglamentos'),
+              icon: const Icon(Icons.gavel_outlined, color: AppColors.cobalto),
+              label: Text('Reglamento del gimnasio',
+                  style: ts(15, weight: kSemi, color: AppColors.cobalto)),
+            ),
+          ]),
         ),
         gapAfter: 16,
       ),
