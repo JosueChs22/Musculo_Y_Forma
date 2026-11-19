@@ -14,7 +14,7 @@ class UsuariosApiService implements UsuariosService {
 
   final http.Client _client;
 
-  // Render Free hace cold start de ~50 s
+  // REGLA 11: el tope es 10 s, pero Render Free hace cold start de ~50 s
   static const _timeout = Duration(seconds: 60);
 
   Map<String, String> get _headers => {
@@ -42,6 +42,11 @@ class UsuariosApiService implements UsuariosService {
       // respuesta que no es JSON: seguimos con el mapa vacío
     }
 
+    if (res.statusCode == 401) {
+      // El token venció o la cuenta se inhabilitó: se cierra la sesión
+      ApiSession.alExpirar?.call();
+    }
+
     if (res.statusCode >= 400) {
       // La API responde {error: '...'} o, si falla la validación, {errors: [...]}
       throw ApiException(
@@ -53,6 +58,27 @@ class UsuariosApiService implements UsuariosService {
     }
     return json;
   }
+
+  // El cuerpo va en snake_case, como pide la API
+  Map<String, dynamic> _cuerpo({
+    required String nombre,
+    required String primerApellido,
+    String? segundoApellido,
+    required String correo,
+    required String telefono,
+    required RolUsuario rol,
+    required String usuario,
+  }) =>
+      {
+        'nombre': nombre.trim(),
+        'primer_apellido': primerApellido.trim(),
+        'segundo_apellido':
+            (segundoApellido == null || segundoApellido.trim().isEmpty) ? null : segundoApellido.trim(),
+        'correo': correo.trim(),
+        'telefono': telefono.trim(),
+        'rol': rol.valor,
+        'usuario': usuario.trim(),
+      };
 
   @override
   Future<List<Usuario>> getUsuarios() async {
@@ -83,20 +109,67 @@ class UsuariosApiService implements UsuariosService {
     required String usuario,
     required String contrasena,
   }) async {
-    // El cuerpo va en snake_case, como pide la API
     final cuerpo = {
-      'nombre': nombre.trim(),
-      'primer_apellido': primerApellido.trim(),
-      'segundo_apellido':
-          (segundoApellido == null || segundoApellido.trim().isEmpty) ? null : segundoApellido.trim(),
-      'correo': correo.trim(),
-      'telefono': telefono.trim(),
-      'rol': rol.valor,
-      'usuario': usuario.trim(),
+      ..._cuerpo(
+        nombre: nombre,
+        primerApellido: primerApellido,
+        segundoApellido: segundoApellido,
+        correo: correo,
+        telefono: telefono,
+        rol: rol,
+        usuario: usuario,
+      ),
       'contrasena': contrasena,
     };
     final json = await _enviar(
       () => _client.post(Uri.parse('$kApiBase/usuarios'), headers: _headers, body: jsonEncode(cuerpo)),
+    );
+    return Usuario.fromJson(json);
+  }
+
+  @override
+  Future<Usuario> actualizarUsuario({
+    required String id,
+    required String nombre,
+    required String primerApellido,
+    String? segundoApellido,
+    required String correo,
+    required String telefono,
+    required RolUsuario rol,
+    required String usuario,
+    String? contrasena,
+  }) async {
+    final cuerpo = {
+      ..._cuerpo(
+        nombre: nombre,
+        primerApellido: primerApellido,
+        segundoApellido: segundoApellido,
+        correo: correo,
+        telefono: telefono,
+        rol: rol,
+        usuario: usuario,
+      ),
+      // Sin contraseña en el cuerpo = la API no la cambia
+      if (contrasena != null && contrasena.isNotEmpty) 'contrasena': contrasena,
+    };
+    final json = await _enviar(
+      () => _client.put(Uri.parse('$kApiBase/usuarios/$id'), headers: _headers, body: jsonEncode(cuerpo)),
+    );
+    return Usuario.fromJson(json);
+  }
+
+  @override
+  Future<Usuario> inhabilitarUsuario(String id) async {
+    final json = await _enviar(
+      () => _client.patch(Uri.parse('$kApiBase/usuarios/$id/inhabilitar'), headers: _headers),
+    );
+    return Usuario.fromJson(json);
+  }
+
+  @override
+  Future<Usuario> habilitarUsuario(String id) async {
+    final json = await _enviar(
+      () => _client.patch(Uri.parse('$kApiBase/usuarios/$id/habilitar'), headers: _headers),
     );
     return Usuario.fromJson(json);
   }

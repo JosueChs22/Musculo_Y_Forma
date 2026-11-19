@@ -6,10 +6,12 @@ import '../../../../core/widgets.dart';
 import '../../../auth/models/usuario.dart';
 import '../../controllers/usuarios_controller.dart';
 
-/// Formulario para crear una Secretaria o un Entrenador (RF-096).
+/// Formulario para crear (RF-096) o editar (RF-099) una Secretaria o un Entrenador.
+/// Si se pasa [usuario], se abre en modo edición con sus datos y la contraseña opcional.
 class UsuarioFormDialog extends StatefulWidget {
-  const UsuarioFormDialog({super.key, required this.controller});
+  const UsuarioFormDialog({super.key, required this.controller, this.usuario});
   final UsuariosController controller;
+  final Usuario? usuario;
 
   @override
   State<UsuarioFormDialog> createState() => _UsuarioFormDialogState();
@@ -17,17 +19,19 @@ class UsuarioFormDialog extends StatefulWidget {
 
 class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
   final _form = GlobalKey<FormState>();
-  final _nombre = TextEditingController();
-  final _apellido1 = TextEditingController();
-  final _apellido2 = TextEditingController();
-  final _correo = TextEditingController();
-  final _telefono = TextEditingController();
-  final _usuario = TextEditingController();
+  late final _nombre = TextEditingController(text: widget.usuario?.nombre);
+  late final _apellido1 = TextEditingController(text: widget.usuario?.primerApellido);
+  late final _apellido2 = TextEditingController(text: widget.usuario?.segundoApellido);
+  late final _correo = TextEditingController(text: widget.usuario?.correo);
+  late final _telefono = TextEditingController(text: widget.usuario?.telefono);
+  late final _usuario = TextEditingController(text: widget.usuario?.usuario);
   final _contrasena = TextEditingController();
   final _confirmar = TextEditingController();
 
-  RolUsuario _rol = RolUsuario.secretaria;
+  late RolUsuario _rol = widget.usuario?.rol ?? RolUsuario.secretaria;
   bool _ocultar = true;
+
+  bool get _editando => widget.usuario != null;
 
   @override
   void dispose() {
@@ -39,20 +43,35 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
 
   Future<void> _guardar() async {
     if (!_form.currentState!.validate()) return;
-    final ok = await widget.controller.crearUsuario(
-      nombre: _nombre.text,
-      primerApellido: _apellido1.text,
-      segundoApellido: _apellido2.text,
-      correo: _correo.text,
-      telefono: _telefono.text,
-      rol: _rol,
-      usuario: _usuario.text,
-      contrasena: _contrasena.text,
-    );
+    final c = widget.controller;
+    final ok = _editando
+        ? await c.actualizarUsuario(
+            id: widget.usuario!.id,
+            nombre: _nombre.text,
+            primerApellido: _apellido1.text,
+            segundoApellido: _apellido2.text,
+            correo: _correo.text,
+            telefono: _telefono.text,
+            rol: _rol,
+            usuario: _usuario.text,
+            contrasena: _contrasena.text, // vacía = no se cambia
+          )
+        : await c.crearUsuario(
+            nombre: _nombre.text,
+            primerApellido: _apellido1.text,
+            segundoApellido: _apellido2.text,
+            correo: _correo.text,
+            telefono: _telefono.text,
+            rol: _rol,
+            usuario: _usuario.text,
+            contrasena: _contrasena.text,
+          );
     if (!ok || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pop();
-    messenger.showSnackBar(const SnackBar(content: Text('Usuario creado correctamente')));
+    messenger.showSnackBar(SnackBar(
+      content: Text(_editando ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente'),
+    ));
   }
 
   @override
@@ -62,10 +81,11 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
       builder: (context, _) {
         final c = widget.controller;
         final enabled = !c.guardando;
+        final error = _editando ? c.errorEditar : c.errorCrear;
 
         return AlertDialog(
           backgroundColor: AppColors.card,
-          title: Text('NUEVO USUARIO', style: display(28)),
+          title: Text(_editando ? 'EDITAR USUARIO' : 'NUEVO USUARIO', style: display(28)),
           content: SizedBox(
             width: 480,
             child: SingleChildScrollView(
@@ -99,9 +119,12 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
                   _campo(_usuario, 'Nombre de usuario', enabled, Validators.usuario),
                   _campo(
                     _contrasena,
-                    'Contraseña',
+                    _editando ? 'Nueva contraseña (opcional)' : 'Contraseña',
                     enabled,
-                    Validators.contrasena,
+                    // Al editar se puede dejar vacía: entonces la contraseña no cambia
+                    _editando
+                        ? (v) => (v == null || v.isEmpty) ? null : Validators.contrasena(v)
+                        : Validators.contrasena,
                     oculto: _ocultar,
                     sufijo: IconButton(
                       tooltip: _ocultar ? 'Mostrar contraseña' : 'Ocultar contraseña',
@@ -109,13 +132,19 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
                       onPressed: () => setState(() => _ocultar = !_ocultar),
                     ),
                   ),
-                  _campo(_confirmar, 'Confirmar contraseña', enabled,
-                      (v) => Validators.confirmacion(v, _contrasena.text),
-                      oculto: _ocultar),
-                  if (c.errorCrear != null)
+                  _campo(
+                    _confirmar,
+                    _editando ? 'Confirmar nueva contraseña' : 'Confirmar contraseña',
+                    enabled,
+                    (v) => (_editando && _contrasena.text.isEmpty)
+                        ? null
+                        : Validators.confirmacion(v, _contrasena.text),
+                    oculto: _ocultar,
+                  ),
+                  if (error != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(c.errorCrear!, style: ts(14, weight: kSemi, color: AppColors.danger)),
+                      child: Text(error, style: ts(14, weight: kSemi, color: AppColors.danger)),
                     ),
                 ]),
               ),
@@ -126,7 +155,11 @@ class _UsuarioFormDialogState extends State<UsuarioFormDialog> {
               onPressed: enabled ? () => Navigator.of(context).pop() : null,
               child: Text('Cancelar', style: ts(15, weight: kSemi, color: AppColors.cobalto)),
             ),
-            PrimaryButton(label: 'Crear usuario', busy: c.guardando, onPressed: _guardar),
+            PrimaryButton(
+              label: _editando ? 'Guardar cambios' : 'Crear usuario',
+              busy: c.guardando,
+              onPressed: _guardar,
+            ),
           ],
         );
       },

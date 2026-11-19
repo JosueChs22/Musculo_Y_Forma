@@ -7,9 +7,11 @@ import '../../../core/theme.dart';
 import '../../../core/widgets.dart';
 import '../../auth/models/usuario.dart';
 import '../controllers/usuarios_controller.dart';
+import 'widgets/usuario_detalle_dialog.dart';
 import 'widgets/usuario_form_dialog.dart';
 
-/// Panel del Administrador: lista de secretarias y entrenadores (RF-103).
+/// Panel del Administrador: secretarias y entrenadores. Lista, búsqueda y
+/// filtros (RF-103, 104, 105), alta (RF-096), edición (RF-099) e inhabilitación (RF-100).
 class UsuariosView extends StatefulWidget {
   const UsuariosView({super.key});
 
@@ -48,11 +50,20 @@ class _UsuariosViewState extends State<UsuariosView> {
       Box(
         Align(
           alignment: Alignment.centerLeft,
-          child: PrimaryButton(
-            label: 'Nuevo usuario',
-            icon: Icons.person_add_alt_1,
-            onPressed: () => _nuevoUsuario(context),
-          ),
+          child: Wrap(spacing: 12, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
+            PrimaryButton(
+              label: 'Nuevo usuario',
+              icon: Icons.person_add_alt_1,
+              onPressed: () => _nuevoUsuario(context),
+            ),
+            // Reglamento del gimnasio (RF-097, 098, 101, 102)
+            TextButton.icon(
+              onPressed: () => context.go('/admin/reglamentos'),
+              icon: const Icon(Icons.gavel_outlined, color: AppColors.cobalto),
+              label: Text('Reglamento del gimnasio',
+                  style: ts(15, weight: kSemi, color: AppColors.cobalto)),
+            ),
+          ]),
         ),
         gapAfter: 16,
       ),
@@ -60,7 +71,7 @@ class _UsuariosViewState extends State<UsuariosView> {
         TextField(
           onChanged: c.buscar,
           decoration: const InputDecoration(
-            hintText: 'Buscar por nombre, usuario o correo',
+            hintText: 'Buscar por identificador, nombre, apellido, correo o rol',
             prefixIcon: Icon(Icons.search),
           ),
         ),
@@ -73,6 +84,16 @@ class _UsuariosViewState extends State<UsuariosView> {
               () => c.filtrarRol(RolUsuario.secretaria)),
           _FiltroChip('Entrenador', c.rolFiltro == RolUsuario.entrenador,
               () => c.filtrarRol(RolUsuario.entrenador)),
+        ]),
+        gapAfter: 8,
+      ),
+      Box(
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          _FiltroChip('Todos los estados', c.estadoFiltro == null, () => c.filtrarEstado(null)),
+          _FiltroChip('Activos', c.estadoFiltro == EstadoUsuario.activo,
+              () => c.filtrarEstado(EstadoUsuario.activo)),
+          _FiltroChip('Inhabilitados', c.estadoFiltro == EstadoUsuario.inhabilitado,
+              () => c.filtrarEstado(EstadoUsuario.inhabilitado)),
         ]),
         gapAfter: 16,
       ),
@@ -87,7 +108,12 @@ class _UsuariosViewState extends State<UsuariosView> {
         ))
       else if (visibles.isEmpty)
         Box(Panel(
-          child: Text('No hay usuarios que coincidan.', style: ts(15, color: AppColors.pizarra)),
+          child: Text(
+            c.hayFiltros
+                ? 'No hay usuarios que coincidan con la búsqueda o los filtros.'
+                : 'Aún no hay usuarios registrados.',
+            style: ts(15, color: AppColors.pizarra),
+          ),
         ))
       else
         SliverList.builder(
@@ -110,6 +136,90 @@ void _nuevoUsuario(BuildContext context) {
     barrierDismissible: false, // no se cierra por accidente a mitad de un formulario
     builder: (_) => UsuarioFormDialog(controller: c),
   );
+}
+
+/// RF-099: abre el mismo formulario con los datos del usuario.
+void _editarUsuario(BuildContext context, Usuario u) {
+  final c = context.read<UsuariosController>();
+  c.limpiarErrorEditar();
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => UsuarioFormDialog(controller: c, usuario: u),
+  );
+}
+
+/// RF-100: pide confirmación y luego inhabilita. Avisa con un mensaje al terminar.
+Future<void> _inhabilitarUsuario(BuildContext context, Usuario u) async {
+  final c = context.read<UsuariosController>();
+  final messenger = ScaffoldMessenger.of(context);
+
+  final confirmar = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: AppColors.card,
+      title: Text('¿INHABILITAR USUARIO?', style: display(26)),
+      content: Text(
+        '${u.nombreCompleto} ya no podrá iniciar sesión. Su información se conserva '
+        'y no se elimina nada.',
+        style: ts(15),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: Text('Cancelar', style: ts(15, weight: kSemi, color: AppColors.cobalto)),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: Text('Inhabilitar', style: ts(15, weight: kSemi, color: AppColors.danger)),
+        ),
+      ],
+    ),
+  );
+  if (confirmar != true) return;
+
+  final ok = await c.inhabilitarUsuario(u.id);
+  messenger.showSnackBar(SnackBar(
+    content: Text(ok
+        ? 'Usuario inhabilitado correctamente'
+        : (c.errorAccion ?? 'No se pudo inhabilitar el usuario.')),
+  ));
+}
+
+/// Reactiva a un usuario inhabilitado, con confirmación y mensaje al terminar.
+Future<void> _habilitarUsuario(BuildContext context, Usuario u) async {
+  final c = context.read<UsuariosController>();
+  final messenger = ScaffoldMessenger.of(context);
+
+  final confirmar = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: AppColors.card,
+      title: Text('¿HABILITAR USUARIO?', style: display(26)),
+      content: Text(
+        '${u.nombreCompleto} volverá a poder iniciar sesión con su misma contraseña.',
+        style: ts(15),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: Text('Cancelar', style: ts(15, weight: kSemi, color: AppColors.cobalto)),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: Text('Habilitar', style: ts(15, weight: kSemi, color: AppColors.success)),
+        ),
+      ],
+    ),
+  );
+  if (confirmar != true) return;
+
+  final ok = await c.habilitarUsuario(u.id);
+  messenger.showSnackBar(SnackBar(
+    content: Text(ok
+        ? 'Usuario habilitado correctamente'
+        : (c.errorAccion ?? 'No se pudo habilitar el usuario.')),
+  ));
 }
 
 class _FiltroChip extends StatelessWidget {
@@ -171,57 +281,16 @@ String _iniciales(Usuario u) {
   return '$a$b'.toUpperCase();
 }
 
-String _dos(int n) => n.toString().padLeft(2, '0');
-
-String _fecha(DateTime d) {
-  final l = d.toLocal();
-  return '${_dos(l.day)}/${_dos(l.month)}/${l.year}';
-}
-
-String _fechaHora(DateTime d) {
-  final l = d.toLocal();
-  return '${_fecha(d)} ${_dos(l.hour)}:${_dos(l.minute)}';
-}
-
+/// Detalle completo del usuario. Editar e inhabilitar se abren con el contexto de
+/// la pantalla (no el del diálogo, que ya se cerró).
 void _mostrarDetalle(BuildContext context, Usuario u) {
   showDialog<void>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: AppColors.card,
-      title: Text(u.nombreCompleto.toUpperCase(), style: display(26)),
-      content: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _Dato('Rol', u.rol.valor),
-          _Dato('Usuario', u.usuario),
-          _Dato('Correo', u.correo),
-          _Dato('Teléfono', u.telefono),
-          _Dato('Estado', u.estado.valor),
-          _Dato('Fecha de ingreso', _fecha(u.fechaIngreso)),
-          _Dato('Último acceso', u.ultimoLogin == null ? 'Nunca' : _fechaHora(u.ultimoLogin!)),
-        ]),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: Text('Cerrar', style: ts(15, weight: kSemi, color: AppColors.cobalto)),
-        ),
-      ],
+    builder: (_) => UsuarioDetalleDialog(
+      usuario: u,
+      onEditar: () => _editarUsuario(context, u),
+      onInhabilitar: () => _inhabilitarUsuario(context, u),
+      onHabilitar: () => _habilitarUsuario(context, u),
     ),
   );
-}
-
-class _Dato extends StatelessWidget {
-  const _Dato(this.label, this.valor);
-  final String label;
-  final String valor;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Eyebrow(label),
-          const SizedBox(height: 2),
-          Text(valor, style: ts(16)),
-        ]),
-      );
 }
