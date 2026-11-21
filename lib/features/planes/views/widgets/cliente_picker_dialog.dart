@@ -16,13 +16,25 @@ class ClienteElegido {
 
 /// Busca clientes por nombre y devuelve el elegido (o null si se cierra sin elegir).
 class ClientePickerDialog extends StatefulWidget {
-  const ClientePickerDialog({super.key, this.actual});
+  const ClientePickerDialog({
+    super.key,
+    this.actual,
+    this.titulo = 'ASIGNAR A UN USUARIO',
+  });
 
   /// Cliente al que está asignado ahora, si lo hay.
   final UsuarioResumen? actual;
+  final String titulo;
 
-  static Future<ClienteElegido?> mostrar(BuildContext context, {UsuarioResumen? actual}) =>
-      showDialog<ClienteElegido>(context: context, builder: (_) => ClientePickerDialog(actual: actual));
+  static Future<ClienteElegido?> mostrar(
+    BuildContext context, {
+    UsuarioResumen? actual,
+    String titulo = 'ASIGNAR A UN USUARIO',
+  }) =>
+      showDialog<ClienteElegido>(
+        context: context,
+        builder: (_) => ClientePickerDialog(actual: actual, titulo: titulo),
+      );
 
   @override
   State<ClientePickerDialog> createState() => _ClientePickerDialogState();
@@ -41,7 +53,7 @@ class _ClientePickerDialogState extends State<ClientePickerDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: AppColors.card,
-      title: Text('ASIGNAR A UN USUARIO', style: display(26)),
+      title: Text(widget.titulo, style: display(26)),
       content: SizedBox(
         width: 440,
         height: 400,
@@ -52,7 +64,7 @@ class _ClientePickerDialogState extends State<ClientePickerDialog> {
               autofocus: true,
               onChanged: _c.buscar,
               decoration: InputDecoration(
-                hintText: 'Buscar por nombre (mín. ${BuscadorClientesController.minimoBusqueda} letras)',
+                hintText: 'Buscar por nombre o carné (mín. ${BuscadorClientesController.minimoBusqueda} letras)',
                 prefixIcon: const Icon(Icons.search),
               ),
             ),

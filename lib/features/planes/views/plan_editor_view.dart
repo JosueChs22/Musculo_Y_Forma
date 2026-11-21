@@ -11,6 +11,7 @@ import '../controllers/plan_editor_controller.dart';
 import '../models/plan.dart';
 import '../services/planes_service.dart';
 import 'widgets/cliente_picker_dialog.dart';
+import 'widgets/menu_entrenador.dart';
 import 'widgets/selector_ejercicios_dialog.dart';
 
 /// Crear o editar un plan: datos generales, ejercicios del catálogo con series,
@@ -95,6 +96,7 @@ class _PlanEditorViewState extends State<PlanEditorView> {
             PageTitle(eyebrow: 'Panel del entrenador', title: _c.esNuevo ? 'Nuevo plan' : 'Editar plan'),
             gapAfter: 20,
           ),
+          const Box(MenuEntrenador(seccion: SeccionEntrenador.planes), gapAfter: 16),
         ];
 
         if (_c.errorCarga != null) {

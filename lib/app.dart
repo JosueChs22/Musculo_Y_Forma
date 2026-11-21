@@ -13,8 +13,11 @@ import 'features/auth/views/login_view.dart';
 import 'features/auth/views/recuperar_view.dart';
 import 'features/ejercicios/views/ejercicios_view.dart';
 import 'features/inicio/views/inicio_view.dart';
+import 'features/mediciones/views/mediciones_entrenador_view.dart';
+import 'features/mediciones/views/historial_mediciones_view.dart';
 import 'features/perfil/views/perfil_view.dart';
 import 'features/planes/views/plan_editor_view.dart';
+import 'features/planes/views/citas_entrenador_view.dart';
 import 'features/planes/views/planes_view.dart';
 import 'features/progreso/views/progreso_view.dart';
 import 'features/rutinas/views/rutinas_view.dart';
@@ -32,14 +35,17 @@ Page<void> _page(GoRouterState s, Widget child) => CustomTransitionPage<void>(
         final curva = CurvedAnimation(parent: animation, curve: kCurve);
         return FadeTransition(
           // La pantalla anterior se desvanece primero y la nueva entra después: nunca se ven encimadas
-          opacity: Tween(begin: 1.0, end: 0.0)
-              .animate(CurvedAnimation(parent: saliendo, curve: const Interval(0, .35))),
+          opacity: Tween(begin: 1.0, end: 0.0).animate(
+              CurvedAnimation(parent: saliendo, curve: const Interval(0, .35))),
           child: FadeTransition(
-          opacity: CurvedAnimation(parent: animation, curve: const Interval(.35, 1, curve: kCurve)),
-          child: SlideTransition(
-            position: Tween(begin: const Offset(0, .015), end: Offset.zero).animate(curva),
-            child: child,
-          ),
+            opacity: CurvedAnimation(
+                parent: animation,
+                curve: const Interval(.35, 1, curve: kCurve)),
+            child: SlideTransition(
+              position: Tween(begin: const Offset(0, .015), end: Offset.zero)
+                  .animate(curva),
+              child: child,
+            ),
           ),
         );
       },
@@ -71,25 +77,63 @@ GoRouter buildRouter(AuthController auth, {String inicial = '/'}) => GoRouter(
         return puedeEntrar(auth.usuario!.rol, ruta) ? null : '/';
       },
       routes: [
-        GoRoute(path: '/login', pageBuilder: (c, s) => _page(s, const LoginView())),
-        GoRoute(path: '/recuperar', pageBuilder: (c, s) => _page(s, const RecuperarView())),
+        GoRoute(
+            path: '/login', pageBuilder: (c, s) => _page(s, const LoginView())),
+        GoRoute(
+            path: '/recuperar',
+            pageBuilder: (c, s) => _page(s, const RecuperarView())),
         ShellRoute(
-          builder: (context, state, child) => AppShell(location: state.uri.path, child: child),
+          builder: (context, state, child) =>
+              AppShell(location: state.uri.path, child: child),
           routes: [
-            GoRoute(path: '/', pageBuilder: (c, s) => _page(s, const InicioView())),
-            GoRoute(path: '/rutinas', pageBuilder: (c, s) => _page(s, const RutinasView())),
-            GoRoute(path: '/progreso', pageBuilder: (c, s) => _page(s, const ProgresoView())),
-            GoRoute(path: '/perfil', pageBuilder: (c, s) => _page(s, const PerfilView())),
-            GoRoute(path: '/coach', pageBuilder: (c, s) => _page(s, const PlanesView())),
-            GoRoute(path: '/coach/ejercicios', pageBuilder: (c, s) => _page(s, const EjerciciosView())),
-            GoRoute(path: '/coach/plan/nuevo', pageBuilder: (c, s) => _page(s, const PlanEditorView())),
+            GoRoute(
+                path: '/', pageBuilder: (c, s) => _page(s, const InicioView())),
+            GoRoute(
+                path: '/rutinas',
+                pageBuilder: (c, s) => _page(s, const RutinasView())),
+            GoRoute(
+                path: '/progreso',
+                pageBuilder: (c, s) => _page(s, const ProgresoView())),
+            GoRoute(
+                path: '/perfil',
+                pageBuilder: (c, s) => _page(s, const PerfilView())),
+            GoRoute(
+                path: '/coach',
+                pageBuilder: (c, s) => _page(s, const PlanesView())),
+            GoRoute(
+                path: '/coach/ejercicios',
+                pageBuilder: (c, s) => _page(s, const EjerciciosView())),
+            GoRoute(
+                path: '/coach/citas',
+                pageBuilder: (c, s) => _page(s, const CitasEntrenadorView())),
+            GoRoute(
+                path: '/coach/mediciones',
+                pageBuilder: (c, s) =>
+                    _page(s, const MedicionesEntrenadorView())),
+            GoRoute(
+                path: '/coach/mediciones/historial',
+                pageBuilder: (c, s) =>
+                    _page(s, const HistorialMedicionesView())),
+            GoRoute(
+                path: '/coach/plan/nuevo',
+                pageBuilder: (c, s) => _page(s, const PlanEditorView())),
             GoRoute(
               path: '/coach/plan/:id',
-              pageBuilder: (c, s) => _page(s, PlanEditorView(key: ValueKey(s.pathParameters['id']), id: s.pathParameters['id'])),
+              pageBuilder: (c, s) => _page(
+                  s,
+                  PlanEditorView(
+                      key: ValueKey(s.pathParameters['id']),
+                      id: s.pathParameters['id'])),
             ),
-            GoRoute(path: '/secretaria', pageBuilder: (c, s) => _page(s, const SecretariaView())),
-            GoRoute(path: '/admin', pageBuilder: (c, s) => _page(s, const UsuariosView())),
-            GoRoute(path: '/admin/reglamentos', pageBuilder: (c, s) => _page(s, const ReglamentosView())),
+            GoRoute(
+                path: '/secretaria',
+                pageBuilder: (c, s) => _page(s, const SecretariaView())),
+            GoRoute(
+                path: '/admin',
+                pageBuilder: (c, s) => _page(s, const UsuariosView())),
+            GoRoute(
+                path: '/admin/reglamentos',
+                pageBuilder: (c, s) => _page(s, const ReglamentosView())),
           ],
         ),
       ],
@@ -109,7 +153,8 @@ class _GmyfAppState extends State<GmyfApp> {
 
   // Ruta con la que se abrió la app (URL del navegador o enlace profundo en móvil),
   // leída antes de que la pantalla de carga la cambie.
-  final String _rutaInicial = WidgetsBinding.instance.platformDispatcher.defaultRouteName;
+  final String _rutaInicial =
+      WidgetsBinding.instance.platformDispatcher.defaultRouteName;
 
   @override
   void dispose() {
@@ -130,7 +175,8 @@ class _GmyfAppState extends State<GmyfApp> {
         home: const _Restaurando(),
       );
     }
-    final router = _router ??= buildRouter(context.read<AuthController>(), inicial: _rutaInicial);
+    final router = _router ??=
+        buildRouter(context.read<AuthController>(), inicial: _rutaInicial);
     return MaterialApp.router(
       title: 'Músculo y Forma',
       scrollBehavior: const _Desplazamiento(),
@@ -151,7 +197,8 @@ class _Restaurando extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const BrandLockup(),
             const SizedBox(height: 16),
-            Text('Abriendo tu sesión…', style: ts(15, color: AppColors.pizarra)),
+            Text('Abriendo tu sesión…',
+                style: ts(15, color: AppColors.pizarra)),
           ]),
         ),
       );

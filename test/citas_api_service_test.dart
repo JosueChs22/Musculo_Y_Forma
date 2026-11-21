@@ -72,6 +72,27 @@ void main() {
               headers: {'content-type': 'application/json'},
             );
           }
+          if (request.method == 'GET' &&
+              request.url.path.endsWith('/citas/entrenador')) {
+            return http.Response(
+              jsonEncode({
+                'data': [
+                  {
+                    'id': 'c' * 24,
+                    'idCliente': 'a' * 24,
+                    'clienteNombreCompleto': 'Ana Pérez',
+                    'carne': 'C123',
+                    'idCoach': 'b' * 24,
+                    'entrenadorNombreCompleto': 'Luis Mora',
+                    'fechaHora': '2026-11-15T14:30:00.000Z',
+                    'estado': 'Agendada',
+                  },
+                ],
+              }),
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }
           if (request.method == 'PUT') {
             return http.Response(
               jsonEncode({
@@ -124,6 +145,10 @@ void main() {
       inicio: '2026-11-15T00:00:00-06:00',
       fin: '2026-11-16T00:00:00-06:00',
     );
+    final citasEntrenador = await service.listarCitasEntrenadorPorFecha(
+      inicio: '2026-11-15T00:00:00-06:00',
+      fin: '2026-11-16T00:00:00-06:00',
+    );
     final cita = await service.crearCita(
       idCliente: cliente.id,
       idCoach: entrenadores.single.id,
@@ -135,6 +160,7 @@ void main() {
     expect(citasDia, [DateTime.parse('2026-11-15T13:00:00.000Z')]);
     expect(citas.single.clienteNombreCompleto, 'Ana Pérez');
     expect(citas.single.estado, 'Agendada');
+    expect(citasEntrenador.single.carne, 'C123');
     expect(requests[2].url.queryParameters, {
       'inicio': '2026-11-15T00:00:00-06:00',
       'fin': '2026-11-16T00:00:00-06:00',
@@ -144,9 +170,14 @@ void main() {
       'inicio': '2026-11-15T00:00:00-06:00',
       'fin': '2026-11-16T00:00:00-06:00',
     });
+    expect(requests[4].url.path, endsWith('/citas/entrenador'));
+    expect(requests[4].url.queryParameters, {
+      'inicio': '2026-11-15T00:00:00-06:00',
+      'fin': '2026-11-16T00:00:00-06:00',
+    });
     expect(cita.estado, 'Agendada');
-    expect(requests[4].url.path, endsWith('/citas'));
-    expect(jsonDecode(requests[4].body), {
+    expect(requests[5].url.path, endsWith('/citas'));
+    expect(jsonDecode(requests[5].body), {
       'id_cliente': 'a' * 24,
       'id_coach': 'b' * 24,
       'fecha_hora': '2026-11-15T08:30:00-06:00',
@@ -197,5 +228,41 @@ void main() {
     );
 
     expect(request.url.queryParameters['excluir'], 'c' * 24);
+  });
+
+  test('busca las citas más recientes del entrenador por nombre o carné',
+      () async {
+    late http.Request request;
+    final service = CitasApiService(
+      http: ApiHttp(
+        client: MockClient((value) async {
+          request = value;
+          return http.Response(
+            jsonEncode({
+              'data': [
+                {
+                  'id': 'c' * 24,
+                  'idCliente': 'a' * 24,
+                  'clienteNombreCompleto': 'Ana Pérez',
+                  'carne': 'C123',
+                  'idCoach': 'b' * 24,
+                  'entrenadorNombreCompleto': 'Luis Mora',
+                  'fechaHora': '2026-11-15T14:30:00.000Z',
+                  'estado': 'Agendada',
+                },
+              ],
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      ),
+    );
+
+    final citas = await service.buscarUltimasCitasEntrenador('  ana pérez  ');
+
+    expect(citas.single.clienteNombreCompleto, 'Ana Pérez');
+    expect(request.url.path, endsWith('/citas/entrenador/buscar'));
+    expect(request.url.queryParameters, {'q': 'ana pérez'});
   });
 }

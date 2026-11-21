@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/imagen_red.dart';
@@ -9,6 +8,7 @@ import '../../../core/widgets.dart';
 import '../controllers/ejercicios_controller.dart';
 import '../models/ejercicio.dart';
 import 'widgets/ejercicio_form_dialog.dart';
+import '../../planes/views/widgets/menu_entrenador.dart';
 
 /// Panel del Entrenador: catálogo de ejercicios (RF-062) con búsqueda (RF-073).
 class EjerciciosView extends StatefulWidget {
@@ -20,7 +20,8 @@ class EjerciciosView extends StatefulWidget {
 
 class _EjerciciosViewState extends State<EjerciciosView> {
   // El controlador sobrevive a la pantalla: al volver, el campo muestra la búsqueda vigente.
-  late final _busqueda = TextEditingController(text: context.read<EjerciciosController>().escrito);
+  late final _busqueda =
+      TextEditingController(text: context.read<EjerciciosController>().escrito);
 
   @override
   void initState() {
@@ -43,22 +44,6 @@ class _EjerciciosViewState extends State<EjerciciosView> {
     final items = c.items;
 
     return SliverPage(slivers: [
-      Box(
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => context.go('/coach'),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(44, 44),
-              foregroundColor: AppColors.cobalto,
-            ),
-            icon: const Icon(Icons.arrow_back, size: 18),
-            label: Text('Volver a los planes', style: ts(14, weight: kSemi, color: AppColors.cobalto)),
-          ),
-        ),
-        gapAfter: 8,
-      ),
       const Box(
         PageTitle(
           eyebrow: 'Panel del entrenador',
@@ -67,6 +52,8 @@ class _EjerciciosViewState extends State<EjerciciosView> {
         ),
         gapAfter: 16,
       ),
+      const Box(MenuEntrenador(seccion: SeccionEntrenador.ejercicios),
+          gapAfter: 16),
       Box(
         Align(
           alignment: Alignment.centerLeft,
@@ -86,7 +73,8 @@ class _EjerciciosViewState extends State<EjerciciosView> {
             onChanged: c.buscar,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
-              hintText: 'Buscar por nombre (mín. ${EjerciciosController.minimoBusqueda} letras)',
+              hintText:
+                  'Buscar por nombre (mín. ${EjerciciosController.minimoBusqueda} letras)',
               prefixIcon: const Icon(Icons.search),
               suffixIcon: value.text.isEmpty
                   ? null
@@ -105,17 +93,24 @@ class _EjerciciosViewState extends State<EjerciciosView> {
       ),
       if (c.textoMuyCorto)
         Box(
-          Text('Escribe al menos ${EjerciciosController.minimoBusqueda} letras para buscar.',
+          Text(
+              'Escribe al menos ${EjerciciosController.minimoBusqueda} letras para buscar.',
               style: ts(13, color: AppColors.pizarra)),
           gapAfter: 12,
         ),
       Box(
-        Wrap(spacing: 8, runSpacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
-          _Chip('Todos', c.grupoFiltro == null, () => c.filtrarGrupo(null)),
-          for (final g in gruposMusculares) _Chip(g, c.grupoFiltro == g, () => c.filtrarGrupo(g)),
-          _Chip('Ver inhabilitados', c.verInhabilitados, () => c.mostrarInhabilitados(!c.verInhabilitados),
-              marca: true),
-        ]),
+        Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              _Chip('Todos', c.grupoFiltro == null, () => c.filtrarGrupo(null)),
+              for (final g in gruposMusculares)
+                _Chip(g, c.grupoFiltro == g, () => c.filtrarGrupo(g)),
+              _Chip('Ver inhabilitados', c.verInhabilitados,
+                  () => c.mostrarInhabilitados(!c.verInhabilitados),
+                  marca: true),
+            ]),
         gapAfter: 16,
       ),
       if (c.error != null)
@@ -152,7 +147,8 @@ class _EjerciciosViewState extends State<EjerciciosView> {
           const Box(SkeletonScope(child: Panel(child: SkeletonRow())))
         else if (c.hayMas)
           Box(Center(
-            child: SecondaryButton(label: 'Cargar más', onPressed: () => _cargarMas(context)),
+            child: SecondaryButton(
+                label: 'Cargar más', onPressed: () => _cargarMas(context)),
           )),
       ],
     ]);
@@ -161,7 +157,8 @@ class _EjerciciosViewState extends State<EjerciciosView> {
 
 void _mostrarAviso(BuildContext context) {
   final aviso = context.read<EjerciciosController>().tomarAviso();
-  if (aviso != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(aviso)));
+  if (aviso != null)
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(aviso)));
 }
 
 Future<void> _cargarMas(BuildContext context) async {
@@ -174,13 +171,15 @@ void _abrirFormulario(BuildContext context, [Ejercicio? ejercicio]) {
   c.limpiarErrorGuardar();
   showDialog<void>(
     context: context,
-    barrierDismissible: false, // no se cierra por accidente a mitad de un formulario
+    barrierDismissible:
+        false, // no se cierra por accidente a mitad de un formulario
     builder: (_) => EjercicioFormDialog(controller: c, ejercicio: ejercicio),
   );
 }
 
 /// RF-055: pide confirmación antes de inhabilitar. Reactivar no la necesita.
-Future<void> _cambiarEstado(BuildContext context, Ejercicio e, {required bool activo}) async {
+Future<void> _cambiarEstado(BuildContext context, Ejercicio e,
+    {required bool activo}) async {
   if (!activo) {
     final confirmar = await showDialog<bool>(
       context: context,
@@ -194,11 +193,13 @@ Future<void> _cambiarEstado(BuildContext context, Ejercicio e, {required bool ac
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('Cancelar', style: ts(15, weight: kSemi, color: AppColors.cobalto)),
+            child: Text('Cancelar',
+                style: ts(15, weight: kSemi, color: AppColors.cobalto)),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Inhabilitar', style: ts(15, weight: kSemi, color: AppColors.danger)),
+            child: Text('Inhabilitar',
+                style: ts(15, weight: kSemi, color: AppColors.danger)),
           ),
         ],
       ),
@@ -210,7 +211,9 @@ Future<void> _cambiarEstado(BuildContext context, Ejercicio e, {required bool ac
   final c = context.read<EjerciciosController>();
   final ok = await c.cambiarEstado(e, activo: activo);
   messenger.showSnackBar(SnackBar(
-    content: Text(ok ? 'Ejercicio ${activo ? 'reactivado' : 'inhabilitado'}' : c.tomarAviso() ?? ''),
+    content: Text(ok
+        ? 'Ejercicio ${activo ? 'reactivado' : 'inhabilitado'}'
+        : c.tomarAviso() ?? ''),
   ));
 }
 
@@ -234,7 +237,8 @@ class _Chip extends StatelessWidget {
         selectedColor: AppColors.indigo,
         side: BorderSide.none,
         shape: const StadiumBorder(),
-        labelStyle: ts(14, weight: kSemi, color: selected ? Colors.white : AppColors.ink),
+        labelStyle: ts(14,
+            weight: kSemi, color: selected ? Colors.white : AppColors.ink),
       );
 }
 
@@ -252,11 +256,14 @@ class _EjercicioTile extends StatelessWidget {
           ImagenRed(e.imagenUrl, size: 64),
           const SizedBox(width: 14),
           Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(e.nombre,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: ts(16, weight: kSemi, color: e.activo ? AppColors.ink : AppColors.pizarra)),
+                  style: ts(16,
+                      weight: kSemi,
+                      color: e.activo ? AppColors.ink : AppColors.pizarra)),
               const SizedBox(height: 2),
               Text(
                 e.resumen.isEmpty ? 'Sin datos' : e.resumen,
@@ -268,7 +275,8 @@ class _EjercicioTile extends StatelessWidget {
           ),
           if (!e.activo) ...[
             const SizedBox(width: 12),
-            Text('Inhabilitado', style: ts(13, weight: kSemi, color: AppColors.danger)),
+            Text('Inhabilitado',
+                style: ts(13, weight: kSemi, color: AppColors.danger)),
           ],
           PopupMenuButton<String>(
             tooltip: 'Opciones de ${e.nombre}',
@@ -281,16 +289,20 @@ class _EjercicioTile extends StatelessWidget {
             itemBuilder: (_) => [
               if (e.activo) ...[
                 _opcion('editar', Icons.edit_outlined, 'Editar', AppColors.ink),
-                _opcion('inhabilitar', Icons.block, 'Inhabilitar', AppColors.danger),
+                _opcion('inhabilitar', Icons.block, 'Inhabilitar',
+                    AppColors.danger),
               ] else
-                _opcion('reactivar', Icons.check_circle_outline, 'Reactivar', AppColors.success),
+                _opcion('reactivar', Icons.check_circle_outline, 'Reactivar',
+                    AppColors.success),
             ],
           ),
         ]),
       );
 }
 
-PopupMenuItem<String> _opcion(String valor, IconData icono, String texto, Color color) => PopupMenuItem(
+PopupMenuItem<String> _opcion(
+        String valor, IconData icono, String texto, Color color) =>
+    PopupMenuItem(
       value: valor,
       child: Row(children: [
         Icon(icono, size: 18, color: color),
@@ -309,20 +321,27 @@ void _mostrarDetalle(BuildContext context, Ejercicio e) {
       content: SizedBox(
         width: 480,
         child: SingleChildScrollView(
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (e.gifUrl != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Center(child: ImagenRed(e.gifUrl, size: 240, radius: 16)),
-              ),
-            _Dato('Grupo muscular', e.grupoMuscular),
-            _Dato('Herramienta o equipo', e.herramienta),
-            _Dato('Estado', e.estado),
-            if (e.tiempoRecomendado != null) _Dato('Tiempo recomendado', '${e.tiempoRecomendado} min'),
-            _Dato('Instrucciones', e.instrucciones),
-            if (e.recomendaciones != null) _Dato('Recomendaciones', e.recomendaciones),
-            if (e.observaciones != null) _Dato('Observaciones', e.observaciones),
-          ]),
+          child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (e.gifUrl != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Center(
+                        child: ImagenRed(e.gifUrl, size: 240, radius: 16)),
+                  ),
+                _Dato('Grupo muscular', e.grupoMuscular),
+                _Dato('Herramienta o equipo', e.herramienta),
+                _Dato('Estado', e.estado),
+                if (e.tiempoRecomendado != null)
+                  _Dato('Tiempo recomendado', '${e.tiempoRecomendado} min'),
+                _Dato('Instrucciones', e.instrucciones),
+                if (e.recomendaciones != null)
+                  _Dato('Recomendaciones', e.recomendaciones),
+                if (e.observaciones != null)
+                  _Dato('Observaciones', e.observaciones),
+              ]),
         ),
       ),
       actions: [
@@ -332,11 +351,13 @@ void _mostrarDetalle(BuildContext context, Ejercicio e) {
               Navigator.of(ctx).pop();
               _abrirFormulario(context, e);
             },
-            child: Text('Editar', style: ts(15, weight: kSemi, color: AppColors.cobalto)),
+            child: Text('Editar',
+                style: ts(15, weight: kSemi, color: AppColors.cobalto)),
           ),
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),
-          child: Text('Cerrar', style: ts(15, weight: kSemi, color: AppColors.cobalto)),
+          child: Text('Cerrar',
+              style: ts(15, weight: kSemi, color: AppColors.cobalto)),
         ),
       ],
     ),
@@ -354,7 +375,9 @@ class _Dato extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Eyebrow(label),
           const SizedBox(height: 2),
-          Text(valor ?? 'Sin especificar', style: ts(16, color: valor == null ? AppColors.pizarra : AppColors.ink)),
+          Text(valor ?? 'Sin especificar',
+              style: ts(16,
+                  color: valor == null ? AppColors.pizarra : AppColors.ink)),
         ]),
       );
 }

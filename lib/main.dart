@@ -14,6 +14,8 @@ import 'features/auth/services/auth_service.dart';
 import 'features/ejercicios/controllers/ejercicios_controller.dart';
 import 'features/ejercicios/services/ejercicios_api_service.dart';
 import 'features/ejercicios/services/ejercicios_service.dart';
+import 'features/mediciones/services/mediciones_api_service.dart';
+import 'features/mediciones/services/mediciones_service.dart';
 import 'features/perfil/controllers/perfil_controller.dart';
 import 'features/perfil/services/perfil_api_service.dart';
 import 'features/perfil/services/perfil_service.dart';
@@ -44,17 +46,20 @@ class AppServices {
     ProgresoService? progreso,
     ClientesService? clientes,
     CitasService? citas,
+    MedicionesService? mediciones,
   })  : _perfil = perfil,
         _rutinas = rutinas,
         _progreso = progreso,
         _clientes = clientes,
-        _citas = citas;
+        _citas = citas,
+        _mediciones = mediciones;
 
   final PerfilService? _perfil;
   final RutinasService? _rutinas;
   final ProgresoService? _progreso;
   final ClientesService? _clientes;
   final CitasService? _citas;
+  final MedicionesService? _mediciones;
 
   PerfilService get perfil => _perfil ?? PerfilApiService();
 
@@ -65,6 +70,8 @@ class AppServices {
   ClasesService get clases => ClasesApiService();
 
   CitasService get citas => _citas ?? CitasApiService();
+
+  MedicionesService get mediciones => _mediciones ?? MedicionesApiService();
 
   ClientesService get clientes => _clientes ?? ClientesApiService();
 
@@ -128,6 +135,7 @@ class AppRoot extends StatelessWidget {
         ChangeNotifierProvider(
             create: (_) => ClientesController(services.clientes)),
         Provider<CitasService>(create: (_) => services.citas),
+        Provider<MedicionesService>(create: (_) => services.mediciones),
       ],
       child: const GmyfApp(),
     );

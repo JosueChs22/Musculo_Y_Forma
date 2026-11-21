@@ -8,6 +8,7 @@ import '../../../core/widgets.dart';
 import '../controllers/planes_controller.dart';
 import '../models/plan.dart';
 import 'widgets/cliente_picker_dialog.dart';
+import 'widgets/menu_entrenador.dart';
 
 /// Panel del Entrenador: sus planes de entrenamiento. Desde aquí crea planes,
 /// los edita, los asigna a un usuario (buscándolo por nombre) y entra al catálogo de ejercicios.
@@ -51,15 +52,16 @@ class _PlanesViewState extends State<PlanesView> {
         ),
         gapAfter: 16,
       ),
+      const Box(MenuEntrenador(seccion: SeccionEntrenador.planes), gapAfter: 16),
       Box(
-        Wrap(spacing: 12, runSpacing: 12, children: [
-          PrimaryButton(label: 'Nuevo plan', icon: Icons.add, onPressed: () => context.go('/coach/plan/nuevo')),
-          SecondaryButton(
-            label: 'Catálogo de ejercicios',
-            icon: Icons.fitness_center,
-            onPressed: () => context.go('/coach/ejercicios'),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: PrimaryButton(
+            label: 'Nuevo plan',
+            icon: Icons.add,
+            onPressed: () => context.go('/coach/plan/nuevo'),
           ),
-        ]),
+        ),
         gapAfter: 16,
       ),
       Box(

@@ -36,6 +36,33 @@ class CitasApiService implements CitasService {
   }
 
   @override
+  Future<List<CitaConsulta>> listarCitasEntrenadorPorFecha({
+    required String inicio,
+    required String fin,
+  }) async {
+    final json = await _http.get(
+      '/citas/entrenador',
+      query: {'inicio': inicio, 'fin': fin},
+    );
+    return [
+      for (final cita in json['data'] as List)
+        CitaConsulta.fromJson(cita as Map<String, dynamic>),
+    ];
+  }
+
+  @override
+  Future<List<CitaConsulta>> buscarUltimasCitasEntrenador(String termino) async {
+    final json = await _http.get(
+      '/citas/entrenador/buscar',
+      query: {'q': termino.trim()},
+    );
+    return [
+      for (final cita in json['data'] as List)
+        CitaConsulta.fromJson(cita as Map<String, dynamic>),
+    ];
+  }
+
+  @override
   Future<List<DateTime>> listarCitasAgendadasClienteEnRango({
     required String idCliente,
     required String inicio,

@@ -10,6 +10,13 @@ abstract class CitasService {
     required String fin,
   });
 
+  Future<List<CitaConsulta>> listarCitasEntrenadorPorFecha({
+    required String inicio,
+    required String fin,
+  });
+
+  Future<List<CitaConsulta>> buscarUltimasCitasEntrenador(String termino);
+
   Future<List<DateTime>> listarCitasAgendadasClienteEnRango({
     required String idCliente,
     required String inicio,
