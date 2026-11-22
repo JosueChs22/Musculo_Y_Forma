@@ -5,6 +5,9 @@ abstract class ReglamentosService {
   /// RF-102: todos los reglamentos, activos e inhabilitados, del más nuevo al más viejo.
   Future<List<Reglamento>> getReglamentos();
 
+  /// RF-093: lo que ven los clientes: solo los reglamentos activos, del más nuevo al más viejo.
+  Future<List<Reglamento>> getReglamentosVigentes();
+
   /// RF-097: publica un reglamento (queda Activo).
   Future<Reglamento> crearReglamento({required String titulo, required String contenido});
 

@@ -22,6 +22,16 @@ class AnunciosApiService implements AnunciosService {
     );
   }
 
+  // RF-092: GET /anuncios/vigentes (cualquier rol con sesión)
+  @override
+  Future<PaginaAnuncios> getAnunciosVigentes({String? cursor}) async {
+    final json = await _http.get('/anuncios/vigentes', query: {if (cursor != null) 'cursor': cursor});
+    return PaginaAnuncios(
+      (json['data'] as List).map((e) => Anuncio.fromJson(e as Map<String, dynamic>)).toList(),
+      json['nextCursor'] as String?,
+    );
+  }
+
   @override
   Future<Anuncio> getAnuncio(String id) async => Anuncio.fromJson(await _http.get('/anuncios/$id'));
 

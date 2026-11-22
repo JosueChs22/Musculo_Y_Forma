@@ -12,6 +12,9 @@ abstract class AnunciosService {
   /// RF-032: anuncios activos e inhabilitados, del más nuevo al más viejo, sin la imagen.
   Future<PaginaAnuncios> getAnuncios({String? cursor});
 
+  /// RF-092: lo que ven los clientes: solo anuncios activos y vigentes, con su imagen.
+  Future<PaginaAnuncios> getAnunciosVigentes({String? cursor});
+
   /// RF-032 #6: el anuncio completo, con su imagen.
   Future<Anuncio> getAnuncio(String id);
 

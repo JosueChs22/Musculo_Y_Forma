@@ -8,6 +8,7 @@ class UserProfile {
     this.coachName,
     this.goal,
     this.lastMeasurement,
+    this.fechaPago,
     this.streakDays = 0,
   });
 
@@ -19,6 +20,9 @@ class UserProfile {
   /// Objetivo registrado en su última medición, o null.
   final String? goal;
   final DateTime? lastMeasurement;
+
+  /// Fecha de pago registrada (solo los clientes la tienen).
+  final DateTime? fechaPago;
 
   /// Días seguidos entrenando. Aún no se registra en la API: queda en 0 y no se muestra.
   final int streakDays;
@@ -45,6 +49,7 @@ class UserProfile {
       coachName: coach?['nombre'] as String?,
       goal: json['objetivo'] as String?,
       lastMeasurement: json['ultimaMedicion'] == null ? null : DateTime.parse(json['ultimaMedicion'] as String),
+      fechaPago: json['fechaPago'] == null ? null : DateTime.parse(json['fechaPago'] as String),
     );
   }
 }
