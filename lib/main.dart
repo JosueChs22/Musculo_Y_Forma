@@ -28,8 +28,11 @@ import 'features/progreso/services/progreso_service.dart';
 import 'features/rutinas/controllers/rutinas_controller.dart';
 import 'features/rutinas/services/rutinas_api_service.dart';
 import 'features/rutinas/services/rutinas_service.dart';
+import 'features/secretaria/controllers/anuncios_controller.dart';
 import 'features/secretaria/controllers/clases_controller.dart';
 import 'features/secretaria/controllers/clientes_controller.dart';
+import 'features/secretaria/services/anuncios_api_service.dart';
+import 'features/secretaria/services/anuncios_service.dart';
 import 'features/secretaria/services/clases_api_service.dart';
 import 'features/secretaria/services/clases_service.dart';
 import 'features/secretaria/services/citas_api_service.dart';
@@ -68,6 +71,8 @@ class AppServices {
   ProgresoService get progreso => _progreso ?? ProgresoApiService();
 
   ClasesService get clases => ClasesApiService();
+
+  AnunciosService get anuncios => AnunciosApiService();
 
   CitasService get citas => _citas ?? CitasApiService();
 
@@ -134,6 +139,9 @@ class AppRoot extends StatelessWidget {
             create: (_) => ClasesController(services.clases)),
         ChangeNotifierProvider(
             create: (_) => ClientesController(services.clientes)),
+        // Anuncios (Secretaria): la vista llama a load() al abrirse.
+        ChangeNotifierProvider(
+            create: (_) => AnunciosController(services.anuncios)),
         Provider<CitasService>(create: (_) => services.citas),
         Provider<MedicionesService>(create: (_) => services.mediciones),
       ],
