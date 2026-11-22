@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/fechas.dart';
 import '../../../core/permisos.dart';
 import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
@@ -24,7 +25,20 @@ class PerfilView extends StatelessWidget {
     return SliverPage(slivers: [
       const Box(PageTitle(eyebrow: 'Tu cuenta', title: 'Perfil'), gapAfter: 24),
       Box(_Cuenta(usuario), gapAfter: 16),
-      const Box(_Entrenamiento(), gapAfter: 24),
+      Box(_Entrenamiento(esCliente: usuario.rol == RolUsuario.cliente), gapAfter: 16),
+      // Consultas del gimnasio, para todo usuario con sesión (RF-092, RF-093)
+      Box(
+        SecondaryButton(label: 'Anuncios', icon: Icons.campaign_outlined, onPressed: () => context.go('/anuncios')),
+        gapAfter: 12,
+      ),
+      Box(
+        SecondaryButton(
+          label: 'Reglamento del gimnasio',
+          icon: Icons.gavel_outlined,
+          onPressed: () => context.go('/reglamento'),
+        ),
+        gapAfter: 24,
+      ),
       // Paneles de trabajo del rol (en móvil se entra a ellos desde aquí)
       for (final panel in panelesDe(usuario.rol))
         Box(
@@ -91,9 +105,11 @@ class _Cuenta extends StatelessWidget {
         ]),
         const SizedBox(height: 20),
         Wrap(spacing: 32, runSpacing: 14, children: [
-          _Dato('Usuario', u.usuario),
+          // Para los clientes el nombre de usuario es su carné
+          _Dato(u.rol == RolUsuario.cliente ? 'Carné' : 'Usuario', u.usuario),
           _Dato('Correo', u.correo),
           _Dato('Teléfono', u.telefono),
+          _Dato('Estado de la cuenta', u.estado.valor),
         ]),
       ]),
     );
@@ -102,7 +118,8 @@ class _Cuenta extends StatelessWidget {
 
 /// Coach y objetivo: vienen de la API (GET /mi/perfil).
 class _Entrenamiento extends StatelessWidget {
-  const _Entrenamiento();
+  const _Entrenamiento({required this.esCliente});
+  final bool esCliente;
 
   @override
   Widget build(BuildContext context) {
@@ -115,9 +132,10 @@ class _Entrenamiento extends StatelessWidget {
 
     return Panel(
       child: Wrap(spacing: 32, runSpacing: 14, children: [
-        _Dato('Tu coach', p.coachName ?? 'Sin coach asignado'),
+        _Dato('Entrenador asignado', p.coachName ?? 'Sin entrenador asignado'),
         _Dato('Objetivo actual', p.goal ?? 'Sin definir'),
         _Dato('Última medición', p.lastMeasurementLabel?.replaceFirst('Última medición · ', '') ?? 'Sin mediciones'),
+        if (esCliente) _Dato('Fecha de pago', p.fechaPago == null ? 'Sin registrar' : fechaCorta(p.fechaPago!)),
       ]),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/skeleton.dart';
@@ -37,6 +38,18 @@ class _SecretariaViewState extends State<SecretariaView> {
   Widget build(BuildContext context) {
     return SliverPage(slivers: [
       const Box(_Header(), gapAfter: 16),
+      // Anuncios (RF-017, 022, 027, 032): pantalla propia
+      Box(
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SecondaryButton(
+            label: 'Anuncios',
+            icon: Icons.campaign_outlined,
+            onPressed: () => context.go('/secretaria/anuncios'),
+          ),
+        ),
+        gapAfter: 16,
+      ),
       Box(
         Panel(
           padding: const EdgeInsets.all(8),

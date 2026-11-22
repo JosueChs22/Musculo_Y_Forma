@@ -59,13 +59,19 @@ class ReglamentosApiService implements ReglamentosService {
   }
 
   @override
-  Future<List<Reglamento>> getReglamentos() async {
+  Future<List<Reglamento>> getReglamentos() => _traerTodos('/reglamentos');
+
+  // RF-093: GET /reglamentos/vigentes (cualquier rol con sesión)
+  @override
+  Future<List<Reglamento>> getReglamentosVigentes() => _traerTodos('/reglamentos/vigentes');
+
+  Future<List<Reglamento>> _traerTodos(String ruta) async {
     // Trae todas las páginas en una sola carga (son pocos reglamentos)
     final List<Reglamento> todos = [];
     String? cursor;
 
     do {
-      final path = cursor == null ? '/reglamentos' : '/reglamentos?cursor=$cursor';
+      final path = cursor == null ? ruta : '$ruta?cursor=$cursor';
       final json = await _enviar(() => _client.get(Uri.parse('$kApiBase$path'), headers: _headers));
       todos.addAll(
         (json['data'] as List).map((e) => Reglamento.fromJson(e as Map<String, dynamic>)),

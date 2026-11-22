@@ -21,6 +21,9 @@ import 'features/planes/views/citas_entrenador_view.dart';
 import 'features/planes/views/planes_view.dart';
 import 'features/progreso/views/progreso_view.dart';
 import 'features/rutinas/views/rutinas_view.dart';
+import 'features/anuncios/views/anuncios_cliente_view.dart';
+import 'features/reglamento/views/reglamento_view.dart';
+import 'features/secretaria/views/anuncios_view.dart';
 import 'features/secretaria/views/secretaria_view.dart';
 
 /// Cambio de pantalla: la nueva aparece con un fundido y sube unos píxeles; la
@@ -98,6 +101,12 @@ GoRouter buildRouter(AuthController auth, {String inicial = '/'}) => GoRouter(
                 path: '/perfil',
                 pageBuilder: (c, s) => _page(s, const PerfilView())),
             GoRoute(
+                path: '/anuncios',
+                pageBuilder: (c, s) => _page(s, const AnunciosClienteView())),
+            GoRoute(
+                path: '/reglamento',
+                pageBuilder: (c, s) => _page(s, const ReglamentoView())),
+            GoRoute(
                 path: '/coach',
                 pageBuilder: (c, s) => _page(s, const PlanesView())),
             GoRoute(
@@ -128,6 +137,9 @@ GoRouter buildRouter(AuthController auth, {String inicial = '/'}) => GoRouter(
             GoRoute(
                 path: '/secretaria',
                 pageBuilder: (c, s) => _page(s, const SecretariaView())),
+            GoRoute(
+                path: '/secretaria/anuncios',
+                pageBuilder: (c, s) => _page(s, const AnunciosView())),
             GoRoute(
                 path: '/admin',
                 pageBuilder: (c, s) => _page(s, const UsuariosView())),
