@@ -26,7 +26,15 @@ class PerfilView extends StatelessWidget {
       const Box(PageTitle(eyebrow: 'Tu cuenta', title: 'Perfil'), gapAfter: 24),
       Box(_Cuenta(usuario), gapAfter: 16),
       Box(_Entrenamiento(esCliente: usuario.rol == RolUsuario.cliente), gapAfter: 16),
-      // Consultas del gimnasio, para todo usuario con sesión (RF-092, RF-093)
+      // Consultas del gimnasio, para todo usuario con sesión (RF-092, RF-093, RF-095)
+      Box(
+        SecondaryButton(
+          label: 'Horarios de clases',
+          icon: Icons.schedule_outlined,
+          onPressed: () => context.go('/horarios'),
+        ),
+        gapAfter: 12,
+      ),
       Box(
         SecondaryButton(label: 'Anuncios', icon: Icons.campaign_outlined, onPressed: () => context.go('/anuncios')),
         gapAfter: 12,

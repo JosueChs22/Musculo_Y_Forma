@@ -16,6 +16,9 @@ import 'features/ejercicios/services/ejercicios_api_service.dart';
 import 'features/ejercicios/services/ejercicios_service.dart';
 import 'features/mediciones/services/mediciones_api_service.dart';
 import 'features/mediciones/services/mediciones_service.dart';
+import 'features/horarios/controllers/horarios_controller.dart';
+import 'features/horarios/services/horarios_api_service.dart';
+import 'features/horarios/services/horarios_service.dart';
 import 'features/perfil/controllers/perfil_controller.dart';
 import 'features/perfil/services/perfil_api_service.dart';
 import 'features/perfil/services/perfil_service.dart';
@@ -52,12 +55,14 @@ class AppServices {
     ClientesService? clientes,
     CitasService? citas,
     MedicionesService? mediciones,
+    AuthService? auth,
   })  : _perfil = perfil,
         _rutinas = rutinas,
         _progreso = progreso,
         _clientes = clientes,
         _citas = citas,
-        _mediciones = mediciones;
+        _mediciones = mediciones,
+        _auth = auth;
 
   final PerfilService? _perfil;
   final RutinasService? _rutinas;
@@ -65,6 +70,7 @@ class AppServices {
   final ClientesService? _clientes;
   final CitasService? _citas;
   final MedicionesService? _mediciones;
+  final AuthService? _auth;
 
   PerfilService get perfil => _perfil ?? PerfilApiService();
 
@@ -74,6 +80,8 @@ class AppServices {
 
   ClasesService get clases => ClasesApiService();
 
+  HorariosService get horarios => HorariosApiService();
+
   AnunciosService get anuncios => AnunciosApiService();
 
   CitasService get citas => _citas ?? CitasApiService();
@@ -82,7 +90,7 @@ class AppServices {
 
   ClientesService get clientes => _clientes ?? ClientesApiService();
 
-  AuthService get auth => AuthApiService();
+  AuthService get auth => _auth ?? AuthApiService();
 
   UsuariosService get usuarios => UsuariosApiService();
 
@@ -149,6 +157,9 @@ class AppRoot extends StatelessWidget {
             create: (_) => AnunciosClienteController(services.anuncios)),
         ChangeNotifierProvider(
             create: (_) => ReglamentoController(services.reglamentos)),
+        // Horarios de clases (RF-095, todo rol): la vista llama a load() al abrirse.
+        ChangeNotifierProvider(
+            create: (_) => HorariosController(services.horarios)),
         Provider<CitasService>(create: (_) => services.citas),
         Provider<MedicionesService>(create: (_) => services.mediciones),
       ],

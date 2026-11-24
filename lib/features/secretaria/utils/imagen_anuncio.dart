@@ -7,7 +7,28 @@ import 'package:image_picker/image_picker.dart';
 const kMaxImagenCaracteres = 300000;
 
 /// Bytes de una data URL ("data:image/jpeg;base64,....") para mostrarla con Image.memory.
-Uint8List bytesDeDataUrl(String dataUrl) => base64Decode(dataUrl.substring(dataUrl.indexOf(',') + 1));
+/// Si la data URL viene dañada (o es hostil) devuelve una lista vacía en vez de lanzar.
+Uint8List bytesDeDataUrl(String dataUrl) {
+  try {
+    return base64Decode(dataUrl.substring(dataUrl.indexOf(',') + 1));
+  } on FormatException {
+    return Uint8List(0);
+  }
+}
+
+/// Formato real según los primeros bytes (firma), sin fiarse del nombre del archivo.
+String? _mimePorFirma(Uint8List b) {
+  if (b.length >= 3 && b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF) return 'image/jpeg';
+  if (b.length >= 8 && b[0] == 0x89 && b[1] == 0x50 && b[2] == 0x4E && b[3] == 0x47 &&
+      b[4] == 0x0D && b[5] == 0x0A && b[6] == 0x1A && b[7] == 0x0A) {
+    return 'image/png';
+  }
+  if (b.length >= 12 && b[0] == 0x52 && b[1] == 0x49 && b[2] == 0x46 && b[3] == 0x46 &&
+      b[8] == 0x57 && b[9] == 0x45 && b[10] == 0x42 && b[11] == 0x50) {
+    return 'image/webp';
+  }
+  return null;
+}
 
 const _formatos = {'image/jpeg', 'image/png', 'image/webp'};
 
@@ -39,7 +60,16 @@ Future<({String? dataUrl, String? error})> elegirImagen() async {
   final mime = _formatos.contains(archivo.mimeType) ? archivo.mimeType : _mimePorNombre(archivo.name);
   if (mime == null) return (dataUrl: null, error: 'Formato no admitido. Use una imagen JPG, PNG o WebP.');
 
-  final dataUrl = 'data:$mime;base64,${base64Encode(await archivo.readAsBytes())}';
+  // Tope de bytes antes de leer/codificar (base64 crece ~4/3) y firma real del archivo
+  if (await archivo.length() > kMaxImagenCaracteres * 3 ~/ 4) {
+    return (dataUrl: null, error: 'La imagen es demasiado pesada. Elija una más pequeña o en formato JPG.');
+  }
+  final bytes = await archivo.readAsBytes();
+  final real = _mimePorFirma(bytes);
+  if (real == null) {
+    return (dataUrl: null, error: 'Formato no admitido. Use una imagen JPG, PNG o WebP.');
+  }
+  final dataUrl = 'data:$real;base64,${base64Encode(bytes)}';
   if (dataUrl.length > kMaxImagenCaracteres) {
     return (dataUrl: null, error: 'La imagen es demasiado pesada. Elija una más pequeña o en formato JPG.');
   }

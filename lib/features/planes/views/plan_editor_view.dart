@@ -393,7 +393,7 @@ class _FilaEjercicioState extends State<_FilaEjercicio> {
             child: Text('${widget.posicion + 1}'.padLeft(2, '0'), style: display(18, color: AppColors.indigo)),
           ),
           const SizedBox(width: 12),
-          ImagenRed(e.imagenUrl, size: 56),
+          ImagenRed(e.gifUrl ?? e.imagenUrl, size: 56),
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

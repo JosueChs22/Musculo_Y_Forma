@@ -10,6 +10,7 @@ import '../../perfil/controllers/perfil_controller.dart';
 import '../controllers/rutinas_controller.dart';
 import '../models/exercise.dart';
 import '../models/routine.dart';
+import 'widgets/ejercicio_detalle.dart';
 import 'widgets/workout_dialog.dart';
 
 class RutinasView extends StatelessWidget {
@@ -19,6 +20,7 @@ class RutinasView extends StatelessWidget {
   Widget build(BuildContext context) {
     final loading = context.select<RutinasController, bool>((c) => c.loading);
     final error = context.select<RutinasController, String?>((c) => c.error);
+    final tab = context.select<RutinasController, RutinasTab>((c) => c.tab);
     final routine = context.select<RutinasController, Routine?>((c) => c.selected);
 
     if (error != null) {
@@ -31,34 +33,32 @@ class RutinasView extends StatelessWidget {
     if (loading) {
       return const SliverPage(slivers: [
         Box(SkeletonScope(child: SkeletonTitle()), gapAfter: 28),
+        Box(SkeletonScope(child: SkeletonBox(height: 44, radius: 22)), gapAfter: 24),
         Box(SkeletonScope(child: SkeletonBox(height: 180, radius: 18)), gapAfter: 24),
         Box(SkeletonScope(child: SkeletonBox(height: 120, radius: 18)), gapAfter: 16),
         Box(SkeletonScope(child: Column(children: [SkeletonRow(), SkeletonRow(), SkeletonRow()]))),
       ]);
     }
 
+    if (tab == RutinasTab.historial) {
+      return const SliverPage(slivers: [
+        Box(_Header(), gapAfter: 20),
+        Box(_Tabs(), gapAfter: 24),
+        _HistorialSliver(),
+      ]);
+    }
+
     if (routine == null) {
       return SliverPage(slivers: [
-        const Box(_Header(), gapAfter: 24),
-        Box(Panel(
-          child: Row(children: [
-            const Icon(Icons.event_note_outlined, color: AppColors.indigo, size: 32),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Todavía no tienes rutinas asignadas', style: ts(16, weight: kSemi)),
-                const SizedBox(height: 2),
-                Text('Cuando tu entrenador te asigne un plan, lo verás aquí con cada ejercicio.',
-                    style: ts(14, color: AppColors.pizarra)),
-              ]),
-            ),
-          ]),
-        )),
+        const Box(_Header(), gapAfter: 20),
+        const Box(_Tabs(), gapAfter: 24),
+        Box(_Vacio(tab: tab)),
       ]);
     }
 
     return SliverPage(slivers: [
-      const Box(_Header(), gapAfter: 24),
+      const Box(_Header(), gapAfter: 20),
+      const Box(_Tabs(), gapAfter: 24),
       const Box(_RoutinePicker(), gapAfter: 24),
       Box(_DetailHeader(routine: routine), gapAfter: 12),
       // REGLA 4: lista virtualizada de ejercicios.
@@ -70,6 +70,148 @@ class RutinasView extends StatelessWidget {
         ),
       ),
     ]);
+  }
+}
+
+/// RF-084 / RF-086 / RF-088 / RF-091: Entrenamiento · Calentamiento · Estiramiento · Historial.
+class _Tabs extends StatelessWidget {
+  const _Tabs();
+
+  @override
+  Widget build(BuildContext context) {
+    final tab = context.select<RutinasController, RutinasTab>((c) => c.tab);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SegmentedButton<RutinasTab>(
+        showSelectedIcon: false,
+        segments: [
+          for (final t in RutinasTab.values)
+            ButtonSegment(value: t, label: Text(t.etiqueta, style: ts(14, weight: kSemi))),
+        ],
+        selected: {tab},
+        onSelectionChanged: (s) => context.read<RutinasController>().setTab(s.first),
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith(
+              (st) => st.contains(WidgetState.selected) ? AppColors.indigo : AppColors.card),
+          foregroundColor:
+              WidgetStateProperty.resolveWith((st) => st.contains(WidgetState.selected) ? Colors.white : AppColors.ink),
+          side: const WidgetStatePropertyAll(BorderSide(color: AppColors.line)),
+        ),
+      ),
+    );
+  }
+}
+
+class _Vacio extends StatelessWidget {
+  const _Vacio({required this.tab});
+  final RutinasTab tab;
+
+  @override
+  Widget build(BuildContext context) {
+    final nombre = tab.etiqueta.toLowerCase();
+    return Panel(
+      child: Row(children: [
+        const Icon(Icons.event_note_outlined, color: AppColors.indigo, size: 32),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Todavía no tienes rutinas de $nombre', style: ts(16, weight: kSemi)),
+            const SizedBox(height: 2),
+            Text('Cuando tu entrenador te asigne un plan de $nombre, lo verás aquí con cada ejercicio.',
+                style: ts(14, color: AppColors.pizarra)),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+/// RF-091: planes pasados (inhabilitados) con scroll infinito.
+class _HistorialSliver extends StatelessWidget {
+  const _HistorialSliver();
+
+  @override
+  Widget build(BuildContext context) {
+    final loading = context.select<RutinasController, bool>((c) => c.historialLoading);
+    final error = context.select<RutinasController, String?>((c) => c.historialError);
+    final items = context.select<RutinasController, List<Routine>>((c) => c.historial);
+    final hayMas = context.select<RutinasController, bool>((c) => c.hayMasHistorial);
+    final cargandoMas = context.select<RutinasController, bool>((c) => c.cargandoMas);
+
+    if (error != null) {
+      return SliverToBoxAdapter(
+        child: ErrorPanel(message: error, onRetry: () => context.read<RutinasController>().cargarHistorial()),
+      );
+    }
+    if (loading) {
+      return const SliverToBoxAdapter(
+        child: SkeletonScope(child: Column(children: [SkeletonRow(), SkeletonRow(), SkeletonRow(), SkeletonRow()])),
+      );
+    }
+    if (items.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Panel(child: Text('Aún no tienes rutinas anteriores.', style: ts(15, color: AppColors.pizarra))),
+      );
+    }
+    final extra = (hayMas || cargandoMas) ? 1 : 0;
+    return SliverList.builder(
+      itemCount: items.length + extra,
+      itemBuilder: (context, i) {
+        // Cerca del final se pide la siguiente página (fuera del build).
+        if (hayMas && i >= items.length - 3) {
+          final c = context.read<RutinasController>();
+          WidgetsBinding.instance.addPostFrameCallback((_) => c.cargarMasHistorial());
+        }
+        if (i >= items.length) {
+          return const Padding(
+            padding: EdgeInsets.only(bottom: 12),
+            child: SkeletonScope(child: SkeletonRow()),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _HistorialTile(routine: items[i]),
+        );
+      },
+    );
+  }
+}
+
+/// La API del historial no trae ejercicios: solo nombre, categoría, coach y conteo.
+class _HistorialTile extends StatelessWidget {
+  const _HistorialTile({required this.routine});
+  final Routine routine;
+
+  @override
+  Widget build(BuildContext context) {
+    final n = routine.totalEjercicios;
+    return Panel(
+      child: Row(children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(color: AppColors.indigoSoft, borderRadius: BorderRadius.circular(12)),
+          child: const Icon(Icons.history, size: 20, color: AppColors.indigo),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(routine.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: ts(16, weight: kSemi)),
+            const SizedBox(height: 2),
+            Text(
+              [
+                routine.focus,
+                '$n ${n == 1 ? 'ejercicio' : 'ejercicios'}',
+                if (routine.coachName != null) 'Coach ${routine.coachName}',
+              ].join(' · '),
+              style: ts(14, color: AppColors.pizarra),
+            ),
+          ]),
+        ),
+        const SizedBox(width: 8),
+        const Pill('Inhabilitada'),
+      ]),
+    );
   }
 }
 
@@ -103,7 +245,7 @@ class _RoutinePicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final routines = context.select<RutinasController, List<Routine>>((c) => c.routines);
+    final routines = context.select<RutinasController, List<Routine>>((c) => c.visibles);
     final selected = context.select<RutinasController, int>((c) => c.selectedIndex);
     return SizedBox(
       height: 190,
@@ -149,7 +291,8 @@ class _RoutineTile extends StatelessWidget {
             ),
             child: Icon(Icons.fitness_center, size: 20, color: selected ? Colors.white : AppColors.indigo),
           ),
-          Text('${routine.exercises.length} ${routine.exercises.length == 1 ? 'ejercicio' : 'ejercicios'}', style: ts(13, weight: kSemi, color: soft)),
+          Text('${routine.exercises.length} ${routine.exercises.length == 1 ? 'ejercicio' : 'ejercicios'}',
+              style: ts(13, weight: kSemi, color: soft)),
         ]),
         const Spacer(),
         Text(routine.title.toUpperCase(), maxLines: 1, overflow: TextOverflow.ellipsis, style: display(26, color: fg)),
@@ -209,68 +352,48 @@ class _ExerciseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Panel(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 40,
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(color: AppColors.indigoSoft, borderRadius: BorderRadius.circular(12)),
-          child: Text('${index + 1}'.padLeft(2, '0'), style: display(20, color: AppColors.indigo)),
-        ),
-        const SizedBox(width: 12),
-        if (exercise.imageUrl != null) ...[
-          // Al tocar la imagen se ve la animación del ejercicio
-          Semantics(
-            button: true,
-            label: 'Ver animación de ${exercise.name}',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => _verAnimacion(context, exercise),
-              child: ImagenRed(exercise.imageUrl, size: 72),
-            ),
+    return Pressable(
+      semanticLabel: 'Ver detalle de ${exercise.name}',
+      onTap: () => showEjercicioDetalle(context, exercise),
+      child: Panel(
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: AppColors.indigoSoft, borderRadius: BorderRadius.circular(12)),
+            child: Text('${index + 1}'.padLeft(2, '0'), style: display(20, color: AppColors.indigo)),
           ),
-          const SizedBox(width: 14),
-        ],
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(exercise.name, style: ts(17, weight: kSemi)),
-            const SizedBox(height: 10),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              InfoChip(exercise.setsLabel),
-              InfoChip(exercise.reps),
-              InfoChip(exercise.restLabel),
-            ]),
-            if (exercise.coachNote.isNotEmpty) ...[
+          const SizedBox(width: 12),
+          if (exercise.imageUrl != null) ...[
+            // Al tocar la imagen se ve la animación del ejercicio
+            ImagenRed(exercise.imageUrl, size: 72),
+            const SizedBox(width: 14),
+          ],
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(exercise.name, style: ts(17, weight: kSemi)),
               const SizedBox(height: 10),
-              Text.rich(
-                TextSpan(children: [
-                  TextSpan(text: 'Nota del coach: ', style: ts(14, weight: kSemi)),
-                  TextSpan(text: exercise.coachNote, style: ts(14, color: AppColors.pizarra)),
-                ]),
-                style: const TextStyle(height: 1.5),
-              ),
-            ],
-          ]),
-        ),
-      ]),
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                InfoChip(exercise.setsLabel),
+                InfoChip(exercise.reps),
+                InfoChip(exercise.restLabel),
+                if (exercise.pesoLabel != null) InfoChip(exercise.pesoLabel!),
+              ]),
+              if (exercise.coachNote.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: 'Nota del coach: ', style: ts(14, weight: kSemi)),
+                    TextSpan(text: exercise.coachNote, style: ts(14, color: AppColors.pizarra)),
+                  ]),
+                  style: const TextStyle(height: 1.5),
+                ),
+              ],
+            ]),
+          ),
+        ]),
+      ),
     );
   }
-}
-
-void _verAnimacion(BuildContext context, Exercise e) {
-  showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      backgroundColor: AppColors.card,
-      title: Text(e.name.toUpperCase(), style: display(24)),
-      content: Center(heightFactor: 1, child: ImagenRed(e.gifUrl ?? e.imageUrl, size: 260, radius: 16)),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(ctx).pop(),
-          child: Text('Cerrar', style: ts(15, weight: kSemi, color: AppColors.cobalto)),
-        ),
-      ],
-    ),
-  );
 }

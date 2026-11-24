@@ -20,6 +20,13 @@ const _tabs = <(String, String, IconData, IconData)>[
   ('Perfil', '/perfil', Icons.person_outline, Icons.person_rounded),
 ];
 
+/// Pantallas secundarias comunes: en la barra lateral (ancho) y desde Perfil (móvil).
+const _consultas = <(String, String, IconData)>[
+  ('Horarios de clases', '/horarios', Icons.schedule_outlined),
+  ('Anuncios', '/anuncios', Icons.campaign_outlined),
+  ('Reglamento', '/reglamento', Icons.gavel_outlined),
+];
+
 const _altoCabecera = 60.0;
 const _altoBarra = 64.0;
 const _margenBarra = 12.0;
@@ -214,7 +221,9 @@ class _TabItem extends StatelessWidget {
       pressedScale: .9,
       selected: selected,
       semanticLabel: label,
-      child: ExcludeSemantics(
+      // WCAG 1.4.4: la barra tiene alto fijo; con texto grande se reduce en vez de desbordar
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(icon, size: 22, color: color),
           const SizedBox(height: 2),
@@ -258,6 +267,16 @@ class _Sidebar extends StatelessWidget {
                     label: label,
                     icon: !enPanel && location == path ? activo : icon,
                     selected: !enPanel && location == path,
+                    onTap: () => context.go(path),
+                  ),
+                // Consultas del gimnasio (en móvil se abren desde Perfil)
+                const SizedBox(height: 22),
+                const Padding(padding: EdgeInsets.only(left: 14, bottom: 8), child: Eyebrow('Gimnasio')),
+                for (final (label, path, icon) in _consultas)
+                  _SideItem(
+                    label: label,
+                    icon: icon,
+                    selected: location == path,
                     onTap: () => context.go(path),
                   ),
                 if (suyos.isNotEmpty) ...[

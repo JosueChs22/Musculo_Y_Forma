@@ -157,8 +157,9 @@ class _EjerciciosViewState extends State<EjerciciosView> {
 
 void _mostrarAviso(BuildContext context) {
   final aviso = context.read<EjerciciosController>().tomarAviso();
-  if (aviso != null)
+  if (aviso != null) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(aviso)));
+  }
 }
 
 Future<void> _cargarMas(BuildContext context) async {
@@ -329,7 +330,15 @@ void _mostrarDetalle(BuildContext context, Ejercicio e) {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Center(
-                        child: ImagenRed(e.gifUrl, size: 240, radius: 16)),
+                        child: Semantics(
+                      image: true,
+                      label: 'Demostración del ejercicio ${e.nombre}',
+                      // WCAG 2.3.3: imagen fija si el sistema pide reducir movimiento
+                      child: ImagenRed(
+                          MediaQuery.disableAnimationsOf(context) ? (e.imagenUrl ?? e.gifUrl) : e.gifUrl,
+                          size: 240,
+                          radius: 16),
+                    )),
                   ),
                 _Dato('Grupo muscular', e.grupoMuscular),
                 _Dato('Herramienta o equipo', e.herramienta),

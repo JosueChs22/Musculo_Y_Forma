@@ -12,6 +12,7 @@ import 'features/auth/controllers/auth_controller.dart';
 import 'features/auth/views/login_view.dart';
 import 'features/auth/views/recuperar_view.dart';
 import 'features/ejercicios/views/ejercicios_view.dart';
+import 'features/horarios/views/horarios_view.dart';
 import 'features/inicio/views/inicio_view.dart';
 import 'features/mediciones/views/mediciones_entrenador_view.dart';
 import 'features/mediciones/views/historial_mediciones_view.dart';
@@ -106,6 +107,9 @@ GoRouter buildRouter(AuthController auth, {String inicial = '/'}) => GoRouter(
             GoRoute(
                 path: '/reglamento',
                 pageBuilder: (c, s) => _page(s, const ReglamentoView())),
+            GoRoute(
+                path: '/horarios',
+                pageBuilder: (c, s) => _page(s, const HorariosView())),
             GoRoute(
                 path: '/coach',
                 pageBuilder: (c, s) => _page(s, const PlanesView())),

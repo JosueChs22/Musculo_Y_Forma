@@ -1,3 +1,4 @@
+import '../../planes/models/plan.dart' show CategoriaPlan;
 import '../models/exercise.dart';
 import '../models/routine.dart';
 import 'rutinas_service.dart';
@@ -10,73 +11,93 @@ class RutinasMockService implements RutinasService {
   final Duration latency;
 
   @override
-  Future<List<Routine>> getRoutines() => Future.delayed(latency, () => [
-        Routine(
-          id: 'r1',
-          title: 'Pecho y tríceps',
-          focus: 'Fuerza de empuje',
-          progress: 58,
-          exercises: [
-            _e('Press de banca', 4, '10 repeticiones', 60,
-                'Mantén los pies firmes y controla el descenso.'),
-            _e('Press inclinado con mancuernas', 4, '12 repeticiones', 60,
-                'No cierres completamente los codos.'),
-            _e('Aperturas en polea', 3, '15 repeticiones', 45,
-                'Movimiento lento y recorrido completo.'),
-            _e('Fondos asistidos', 3, '10 repeticiones', 60,
-                'Inclina ligeramente el torso.'),
-            _e('Extensión de tríceps', 4, '12 repeticiones', 45,
-                'Mantén los codos junto al cuerpo.'),
-            _e('Press francés', 3, '12 repeticiones', 45,
-                'Evita abrir los codos.'),
-            _e('Flexiones', 3, 'Al fallo técnico', 60,
-                'Detente si pierdes la postura.'),
-          ],
-        ),
-        Routine(
-          id: 'r2',
-          title: 'Pierna completa',
-          focus: 'Fuerza y estabilidad',
-          progress: 25,
-          exercises: [
-            _e('Sentadilla goblet', 4, '12 repeticiones', 60,
-                'Rodillas alineadas con los pies.'),
-            _e('Peso muerto rumano', 4, '10 repeticiones', 75,
-                'Espalda neutra durante todo el movimiento.'),
-            _e('Prensa de pierna', 4, '12 repeticiones', 60,
-                'No bloquees las rodillas.'),
-            _e('Zancadas estáticas', 3, '10 por lado', 45,
-                'Mantén el torso erguido.'),
-            _e('Curl femoral', 3, '15 repeticiones', 45,
-                'Controla el regreso.'),
-            _e('Extensión de cuádriceps', 3, '15 repeticiones', 45,
-                'Pausa arriba un segundo.'),
-            _e('Elevación de pantorrilla', 4, '18 repeticiones', 30,
-                'Busca el recorrido completo.'),
-            _e('Plancha', 3, '30 segundos', 30, 'Activa abdomen y glúteos.'),
-          ],
-        ),
-        Routine(
-          id: 'r3',
-          title: 'Espalda y bíceps',
-          focus: 'Tracción y postura',
-          progress: 0,
-          exercises: [
-            _e('Jalón al pecho', 4, '10 repeticiones', 60,
-                'Lleva la barra hacia la parte alta del pecho.'),
-            _e('Remo con polea', 4, '12 repeticiones', 60,
-                'Junta los omóplatos al final.'),
-            _e('Remo con mancuerna', 3, '12 por lado', 45,
-                'Evita girar el tronco.'),
-            _e('Pullover en polea', 3, '15 repeticiones', 45,
-                'Brazos casi extendidos.'),
-            _e('Curl con barra', 4, '10 repeticiones', 45,
-                'No balancees el cuerpo.'),
-            _e('Curl martillo', 3, '12 repeticiones', 45,
-                'Muñecas en posición neutra.'),
-            _e('Face pull', 3, '15 repeticiones', 45,
-                'Lleva la cuerda hacia el rostro.'),
-          ],
-        ),
-      ]);
+  Future<List<Routine>> getRoutines() => Future.delayed(
+      latency,
+      () => [
+            Routine(
+              id: 'r1',
+              title: 'Pecho y tríceps',
+              focus: 'Fuerza de empuje',
+              progress: 58,
+              exercises: [
+                _e('Press de banca', 4, '10 repeticiones', 60, 'Mantén los pies firmes y controla el descenso.'),
+                _e('Press inclinado con mancuernas', 4, '12 repeticiones', 60, 'No cierres completamente los codos.'),
+                _e('Aperturas en polea', 3, '15 repeticiones', 45, 'Movimiento lento y recorrido completo.'),
+                _e('Fondos asistidos', 3, '10 repeticiones', 60, 'Inclina ligeramente el torso.'),
+                _e('Extensión de tríceps', 4, '12 repeticiones', 45, 'Mantén los codos junto al cuerpo.'),
+                _e('Press francés', 3, '12 repeticiones', 45, 'Evita abrir los codos.'),
+                _e('Flexiones', 3, 'Al fallo técnico', 60, 'Detente si pierdes la postura.'),
+              ],
+            ),
+            Routine(
+              id: 'r2',
+              title: 'Pierna completa',
+              focus: 'Fuerza y estabilidad',
+              progress: 25,
+              exercises: [
+                _e('Sentadilla goblet', 4, '12 repeticiones', 60, 'Rodillas alineadas con los pies.'),
+                _e('Peso muerto rumano', 4, '10 repeticiones', 75, 'Espalda neutra durante todo el movimiento.'),
+                _e('Prensa de pierna', 4, '12 repeticiones', 60, 'No bloquees las rodillas.'),
+                _e('Zancadas estáticas', 3, '10 por lado', 45, 'Mantén el torso erguido.'),
+                _e('Curl femoral', 3, '15 repeticiones', 45, 'Controla el regreso.'),
+                _e('Extensión de cuádriceps', 3, '15 repeticiones', 45, 'Pausa arriba un segundo.'),
+                _e('Elevación de pantorrilla', 4, '18 repeticiones', 30, 'Busca el recorrido completo.'),
+                _e('Plancha', 3, '30 segundos', 30, 'Activa abdomen y glúteos.'),
+              ],
+            ),
+            Routine(
+              id: 'r3',
+              title: 'Espalda y bíceps',
+              focus: 'Tracción y postura',
+              progress: 0,
+              exercises: [
+                _e('Jalón al pecho', 4, '10 repeticiones', 60, 'Lleva la barra hacia la parte alta del pecho.'),
+                _e('Remo con polea', 4, '12 repeticiones', 60, 'Junta los omóplatos al final.'),
+                _e('Remo con mancuerna', 3, '12 por lado', 45, 'Evita girar el tronco.'),
+                _e('Pullover en polea', 3, '15 repeticiones', 45, 'Brazos casi extendidos.'),
+                _e('Curl con barra', 4, '10 repeticiones', 45, 'No balancees el cuerpo.'),
+                _e('Curl martillo', 3, '12 repeticiones', 45, 'Muñecas en posición neutra.'),
+                _e('Face pull', 3, '15 repeticiones', 45, 'Lleva la cuerda hacia el rostro.'),
+              ],
+            ),
+            Routine(
+              id: 'r4',
+              title: 'Calentamiento general',
+              focus: 'Calentamiento',
+              progress: 0,
+              categoria: CategoriaPlan.calentamiento,
+              exercises: [
+                _e('Bicicleta estática', 1, '5 minutos', 0, 'Ritmo suave.'),
+                _e('Rotación de hombros', 2, '15 repeticiones', 15, ''),
+              ],
+            ),
+            Routine(
+              id: 'r5',
+              title: 'Estiramiento final',
+              focus: 'Estiramiento',
+              progress: 0,
+              categoria: CategoriaPlan.estiramiento,
+              exercises: [
+                _e('Estiramiento de isquiotibiales', 2, '30 segundos', 15, 'Sin rebotes.'),
+              ],
+            ),
+          ]);
+
+  @override
+  Future<PaginaRutinas> getHistorial({String? cursor, int limite = 20}) => Future.delayed(latency, () {
+        final inicio = int.tryParse(cursor ?? '') ?? 0;
+        const total = 30;
+        final fin = (inicio + limite).clamp(0, total);
+        return PaginaRutinas([
+          for (var i = inicio; i < fin; i++)
+            Routine(
+              id: 'h$i',
+              title: 'Plan anterior ${i + 1}',
+              focus: 'Entrenamiento',
+              progress: 0,
+              activa: false,
+              exercises: [_e('Sentadilla', 3, '10 repeticiones', 60, '')],
+            ),
+        ], fin < total ? '$fin' : null);
+      });
 }

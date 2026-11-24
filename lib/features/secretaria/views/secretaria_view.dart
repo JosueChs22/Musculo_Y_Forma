@@ -560,7 +560,7 @@ class _HorarioRow extends StatelessWidget {
                 color: AppColors.cobalto,
                 tooltip: 'Editar horario',
                 onPressed: onEditar,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 padding: EdgeInsets.zero,
               ),
             if (onInhabilitar != null)
@@ -569,7 +569,7 @@ class _HorarioRow extends StatelessWidget {
                 color: AppColors.danger,
                 tooltip: 'Inhabilitar horario',
                 onPressed: onInhabilitar,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 padding: EdgeInsets.zero,
               ),
           ],

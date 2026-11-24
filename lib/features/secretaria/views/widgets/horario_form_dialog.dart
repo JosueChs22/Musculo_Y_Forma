@@ -188,8 +188,11 @@ class _DayChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => Pressable(
         onTap: onTap,
+        radius: 12,
+        selected: selected,
+        semanticLabel: label,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           width: 44,
@@ -218,8 +221,10 @@ class _TimeField extends StatelessWidget {
       '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => Pressable(
         onTap: onTap,
+        radius: kRadiusControl,
+        semanticLabel: '$label: $_formatted. Cambiar hora',
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(

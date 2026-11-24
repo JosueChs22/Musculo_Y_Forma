@@ -72,7 +72,7 @@ class ApiHttp {
       // La API responde {error: '...'} o, si falla la validación, {errors: [...]}
       final errores = json['errors'];
       throw ApiException(
-        json['error'] as String? ??
+        (json['error'] is String ? json['error'] as String : null) ??
             (errores is List && errores.isNotEmpty ? 'Revisa los datos: ${errores.first}' : 'Error ${res.statusCode}'),
       );
     }

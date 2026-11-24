@@ -100,6 +100,10 @@ class _PlanesViewState extends State<PlanesView> {
           _Chip('Todos', c.categoriaFiltro == null, () => c.filtrarCategoria(null)),
           for (final cat in CategoriaPlan.values)
             _Chip(cat.etiqueta, c.categoriaFiltro == cat, () => c.filtrarCategoria(cat)),
+          _Chip('Asignados', c.asignadoFiltro == true,
+              () => c.filtrarAsignacion(c.asignadoFiltro == true ? null : true), marca: true),
+          _Chip('Sin asignar', c.asignadoFiltro == false,
+              () => c.filtrarAsignacion(c.asignadoFiltro == false ? null : false), marca: true),
           _Chip('Ver inhabilitados', c.verInhabilitados, () => c.mostrarInhabilitados(!c.verInhabilitados),
               marca: true),
         ]),
@@ -127,10 +131,18 @@ class _PlanesViewState extends State<PlanesView> {
         // REGLA 4: lista virtualizada
         SliverList.builder(
           itemCount: items.length,
-          itemBuilder: (context, i) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _PlanTile(items[i]),
-          ),
+          itemBuilder: (context, i) {
+            // Scroll infinito: al pintar el último plan se pide la página siguiente.
+            if (i == items.length - 1 && c.hayMas && !c.cargandoMas) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (context.mounted) _cargarMas(context);
+              });
+            }
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _PlanTile(items[i]),
+            );
+          },
         ),
         if (c.cargandoMas)
           const Box(SkeletonScope(child: Panel(child: SkeletonRow())))

@@ -4,11 +4,13 @@ import '../models/plan.dart';
 /// Las operaciones lanzan [ApiException] con un mensaje para el usuario si fallan.
 abstract class PlanesService {
   /// Planes del entrenador, del más nuevo al más viejo. [soloActivos] en false
-  /// incluye también los inhabilitados.
+  /// incluye también los inhabilitados. [asignado] true/false filtra los planes
+  /// asignados a un cliente o sin asignar; null = todos.
   Future<PaginaPlanes> listar({
     CategoriaPlan? categoria,
     String? texto,
     bool soloActivos = true,
+    bool? asignado,
     String? cursor,
   });
 

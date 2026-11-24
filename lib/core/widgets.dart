@@ -48,6 +48,7 @@ class _PressableState extends State<Pressable> {
     final radio = BorderRadius.circular(widget.radius);
 
     return Semantics(
+      container: true,
       button: true,
       enabled: activo,
       selected: widget.selected,
@@ -85,7 +86,8 @@ class _PressableState extends State<Pressable> {
                         : Colors.transparent,
                 border: _focus ? Border.all(color: AppColors.cobalto, width: 2) : null,
               ),
-              child: widget.child,
+              // Con etiqueta propia, el contenido no se lee dos veces
+              child: widget.semanticLabel != null ? ExcludeSemantics(child: widget.child) : widget.child,
             ),
           ),
         ),
@@ -234,7 +236,7 @@ class MiniBar extends StatelessWidget {
         // La barra crece hasta su valor en vez de aparecer de golpe
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: value.clamp(0.0, 1.0)),
-          duration: const Duration(milliseconds: 600),
+          duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 600),
           curve: kCurve,
           builder: (context, v, _) => FractionallySizedBox(
             widthFactor: v,
@@ -554,7 +556,14 @@ class ErrorPanel extends StatelessWidget {
         child: Row(children: [
           const Icon(Icons.error_outline, color: AppColors.danger),
           const SizedBox(width: 12),
-          Expanded(child: Text(message, style: ts(14, color: AppColors.ink))),
+          // Nodo propio y se anuncia al aparecer (WCAG 4.1.3)
+          Expanded(
+            child: Semantics(
+              container: true,
+              liveRegion: true,
+              child: Text(message, style: ts(14, color: AppColors.ink)),
+            ),
+          ),
           const SizedBox(width: 12),
           SecondaryButton(label: 'Reintentar', onPressed: onRetry),
         ]),
