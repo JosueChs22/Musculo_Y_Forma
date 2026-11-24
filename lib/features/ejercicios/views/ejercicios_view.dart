@@ -157,8 +157,9 @@ class _EjerciciosViewState extends State<EjerciciosView> {
 
 void _mostrarAviso(BuildContext context) {
   final aviso = context.read<EjerciciosController>().tomarAviso();
-  if (aviso != null)
+  if (aviso != null) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(aviso)));
+  }
 }
 
 Future<void> _cargarMas(BuildContext context) async {

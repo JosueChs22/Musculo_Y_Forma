@@ -41,6 +41,8 @@ import 'features/secretaria/services/citas_api_service.dart';
 import 'features/secretaria/services/citas_service.dart';
 import 'features/secretaria/services/clientes_api_service.dart';
 import 'features/secretaria/services/clientes_service.dart';
+import 'features/secretaria/controllers/horarios_especiales_controller.dart';
+import 'features/secretaria/services/horarios_especiales_api_service.dart';
 
 /// Servicios de la app (REGLA 0). Todos hablan con la API; en pruebas se pueden
 /// pasar implementaciones mock por el constructor.
@@ -151,6 +153,13 @@ class AppRoot extends StatelessWidget {
             create: (_) => ReglamentoController(services.reglamentos)),
         Provider<CitasService>(create: (_) => services.citas),
         Provider<MedicionesService>(create: (_) => services.mediciones),
+
+        // Horarios especiales del gimnasio - Sprint 2.
+        ChangeNotifierProvider(
+          create: (_) => HorariosEspecialesController(
+            HorariosEspecialesApiService(),
+          ),
+        ),
       ],
       child: const GmyfApp(),
     );

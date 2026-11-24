@@ -10,7 +10,8 @@ class ClasesApiService implements ClasesService {
 
   final ApiHttp _http;
 
-  Future<Clase> _obtener(String id) async => Clase.fromJson(await _http.get('/clases/$id'));
+  Future<Clase> _obtener(String id) async =>
+      Clase.fromJson(await _http.get('/clases/$id'));
 
   // ── Clases ────────────────────────────────────────────────────────────────
 
@@ -21,8 +22,10 @@ class ClasesApiService implements ClasesService {
     String? cursor;
 
     do {
-      final json = await _http.get('/clases', query: {if (cursor != null) 'cursor': cursor});
-      todas.addAll((json['data'] as List).map((e) => Clase.fromJson(e as Map<String, dynamic>)));
+      final json = await _http
+          .get('/clases', query: {if (cursor != null) 'cursor': cursor});
+      todas.addAll((json['data'] as List)
+          .map((e) => Clase.fromJson(e as Map<String, dynamic>)));
       cursor = json['nextCursor'] as String?;
     } while (cursor != null);
 
@@ -30,13 +33,17 @@ class ClasesApiService implements ClasesService {
   }
 
   @override
-  Future<Clase> crearClase({required String nombre, String? descripcion}) async =>
-      Clase.fromJson(await _http.post('/clases', {'nombre': nombre, 'descripcion': descripcion}));
+  Future<Clase> crearClase(
+          {required String nombre, String? descripcion}) async =>
+      Clase.fromJson(await _http
+          .post('/clases', {'nombre': nombre, 'descripcion': descripcion}));
 
   @override
-  Future<Clase> actualizarClase(String id, {String? nombre, String? descripcion}) async {
+  Future<Clase> actualizarClase(String id,
+      {String? nombre, String? descripcion}) async {
     // El API devuelve {ok:true}; se recarga la clase actualizada
-    await _http.put('/clases/$id', {'nombre': nombre, 'descripcion': descripcion});
+    await _http
+        .put('/clases/$id', {'nombre': nombre, 'descripcion': descripcion});
     return _obtener(id);
   }
 
@@ -56,21 +63,32 @@ class ClasesApiService implements ClasesService {
 
   @override
   Future<Clase> agregarHorario(String idClase, HorarioClase horario) async {
-    await _http.post('/clases/$idClase/horarios', {
-      'dias': horario.dias,
-      'hora_inicio': horario.horaInicio,
-      'hora_fin': horario.horaFin,
-    });
+    await _http.post(
+      '/clases/$idClase/horarios',
+      horario.toJson(),
+    );
+
     return _obtener(idClase);
   }
 
   @override
-  Future<Clase> actualizarHorario(String idClase, int index, HorarioClase horario) async {
-    await _http.put('/clases/$idClase/horarios/$index', {
-      'dias': horario.dias,
-      'hora_inicio': horario.horaInicio,
-      'hora_fin': horario.horaFin,
-    });
+  Future<Clase> actualizarHorario(
+    String idClase,
+    int index,
+    HorarioClase horario,
+  ) async {
+    final datos = {
+      ...horario.toJson(),
+
+      // Al editar, null significa eliminar la fecha final.
+      'fecha_fin': horario.fechaFin,
+    };
+
+    await _http.put(
+      '/clases/$idClase/horarios/$index',
+      datos,
+    );
+
     return _obtener(idClase);
   }
 

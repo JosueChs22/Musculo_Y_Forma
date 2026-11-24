@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/skeleton.dart';
@@ -13,8 +12,10 @@ import 'widgets/consultar_citas_section.dart';
 import 'widgets/clase_form_dialog.dart';
 import 'widgets/gestion_clientes_section.dart';
 import 'widgets/horario_form_dialog.dart';
+import 'widgets/horarios_especiales_section.dart';
+import 'package:go_router/go_router.dart';
 
-/// Panel de Secretaría: clases, clientes y agenda de citas.
+/// Panel de Secretar├¡a: clases, horarios, citas y clientes.
 class SecretariaView extends StatefulWidget {
   const SecretariaView({super.key});
 
@@ -28,141 +29,193 @@ class _SecretariaViewState extends State<SecretariaView> {
   @override
   void initState() {
     super.initState();
-    // Se carga al abrir la pantalla: la API necesita el token de la sesión.
+
+    // La API necesita el token de la sesi├│n.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<ClasesController>().load();
+      if (mounted) {
+        context.read<ClasesController>().load();
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return SliverPage(slivers: [
-      const Box(_Header(), gapAfter: 16),
-      // Anuncios (RF-017, 022, 027, 032): pantalla propia
-      Box(
-        Align(
-          alignment: Alignment.centerLeft,
-          child: SecondaryButton(
-            label: 'Anuncios',
-            icon: Icons.campaign_outlined,
-            onPressed: () => context.go('/secretaria/anuncios'),
+    return SliverPage(
+      slivers: [
+        const Box(_Header(), gapAfter: 16),
+
+        // Acceso al módulo de Anuncios del Sprint 3.
+        Box(
+          Align(
+            alignment: Alignment.centerLeft,
+            child: SecondaryButton(
+              label: 'Anuncios',
+              icon: Icons.campaign_outlined,
+              onPressed: () => context.go('/secretaria/anuncios'),
+            ),
           ),
+          gapAfter: 16,
         ),
-        gapAfter: 16,
-      ),
-      Box(
-        Panel(
-          padding: const EdgeInsets.all(8),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth < 850) {
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _SeccionChip(
-                      label: 'Horarios',
-                      icon: Icons.schedule,
-                      selected: _seccion == _SeccionSecretaria.horarios,
-                      onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.horarios),
+
+        // Men├║ de Secretar├¡a.
+        Box(
+          Panel(
+            padding: const EdgeInsets.all(8),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                // Dise├▒o adaptable para pantallas peque├▒as.
+                if (constraints.maxWidth < 1100) {
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _SeccionChip(
+                        label: 'Horarios',
+                        icon: Icons.schedule,
+                        selected: _seccion == _SeccionSecretaria.horarios,
+                        onSelected: () => setState(
+                          () => _seccion = _SeccionSecretaria.horarios,
+                        ),
+                      ),
+                      _SeccionChip(
+                        label: 'Horarios especiales',
+                        icon: Icons.event_busy_outlined,
+                        selected:
+                            _seccion == _SeccionSecretaria.horariosEspeciales,
+                        onSelected: () => setState(
+                          () =>
+                              _seccion = _SeccionSecretaria.horariosEspeciales,
+                        ),
+                      ),
+                      _SeccionChip(
+                        label: 'Agendar cita',
+                        icon: Icons.event_available_outlined,
+                        selected: _seccion == _SeccionSecretaria.agendarCita,
+                        onSelected: () => setState(
+                          () => _seccion = _SeccionSecretaria.agendarCita,
+                        ),
+                      ),
+                      _SeccionChip(
+                        label: 'Consultar citas',
+                        icon: Icons.event_note_outlined,
+                        selected: _seccion == _SeccionSecretaria.consultarCitas,
+                        onSelected: () => setState(
+                          () => _seccion = _SeccionSecretaria.consultarCitas,
+                        ),
+                      ),
+                      _SeccionChip(
+                        label: 'Gestionar cliente',
+                        icon: Icons.groups_outlined,
+                        selected:
+                            _seccion == _SeccionSecretaria.gestionarCliente,
+                        onSelected: () => setState(
+                          () => _seccion = _SeccionSecretaria.gestionarCliente,
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                // Dise├▒o para pantallas grandes.
+                return SegmentedButton<_SeccionSecretaria>(
+                  segments: const [
+                    ButtonSegment(
+                      value: _SeccionSecretaria.horarios,
+                      label: Text('Horarios'),
+                      icon: Icon(Icons.schedule),
                     ),
-                    _SeccionChip(
-                      label: 'Agendar cita',
-                      icon: Icons.event_available_outlined,
-                      selected: _seccion == _SeccionSecretaria.agendarCita,
-                      onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.agendarCita),
+                    ButtonSegment(
+                      value: _SeccionSecretaria.horariosEspeciales,
+                      label: Text('Horarios especiales'),
+                      icon: Icon(Icons.event_busy_outlined),
                     ),
-                    _SeccionChip(
-                      label: 'Consultar citas',
-                      icon: Icons.event_note_outlined,
-                      selected: _seccion == _SeccionSecretaria.consultarCitas,
-                      onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.consultarCitas),
+                    ButtonSegment(
+                      value: _SeccionSecretaria.agendarCita,
+                      label: Text('Agendar cita'),
+                      icon: Icon(Icons.event_available_outlined),
                     ),
-                    _SeccionChip(
-                      label: 'Gestionar cliente',
-                      icon: Icons.groups_outlined,
-                      selected: _seccion == _SeccionSecretaria.gestionarCliente,
-                      onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.gestionarCliente),
+                    ButtonSegment(
+                      value: _SeccionSecretaria.consultarCitas,
+                      label: Text('Consultar citas'),
+                      icon: Icon(Icons.event_note_outlined),
+                    ),
+                    ButtonSegment(
+                      value: _SeccionSecretaria.gestionarCliente,
+                      label: Text('Gestionar cliente'),
+                      icon: Icon(Icons.groups_outlined),
                     ),
                   ],
+                  selected: {_seccion},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (seleccion) {
+                    setState(() {
+                      _seccion = seleccion.first;
+                    });
+                  },
+                  style: SegmentedButton.styleFrom(
+                    selectedBackgroundColor: AppColors.indigo,
+                    selectedForegroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                    ),
+                  ),
                 );
-              }
-              return SegmentedButton<_SeccionSecretaria>(
-                segments: const [
-                  ButtonSegment(
-                    value: _SeccionSecretaria.horarios,
-                    label: Text('Horarios'),
-                    icon: Icon(Icons.schedule),
-                  ),
-                  ButtonSegment(
-                    value: _SeccionSecretaria.agendarCita,
-                    label: Text('Agendar cita'),
-                    icon: Icon(Icons.event_available_outlined),
-                  ),
-                  ButtonSegment(
-                    value: _SeccionSecretaria.consultarCitas,
-                    label: Text('Consultar citas'),
-                    icon: Icon(Icons.event_note_outlined),
-                  ),
-                  ButtonSegment(
-                    value: _SeccionSecretaria.gestionarCliente,
-                    label: Text('Gestionar cliente'),
-                    icon: Icon(Icons.groups_outlined),
-                  ),
-                ],
-                selected: {_seccion},
-                showSelectedIcon: false,
-                onSelectionChanged: (seleccion) =>
-                    setState(() => _seccion = seleccion.first),
-                style: SegmentedButton.styleFrom(
-                  selectedBackgroundColor: AppColors.indigo,
-                  selectedForegroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-              );
-            },
+              },
+            ),
+          ),
+          gapAfter: 24,
+        ),
+
+        // Horarios de clases.
+        Box(
+          Visibility(
+            visible: _seccion == _SeccionSecretaria.horarios,
+            maintainState: true,
+            child: const _ClasesSection(),
           ),
         ),
-        gapAfter: 24,
-      ),
-      Box(
-        Visibility(
-          visible: _seccion == _SeccionSecretaria.horarios,
-          maintainState: true,
-          child: const _ClasesSection(),
+
+        // Sprint 2: Horarios especiales.
+        // Solo se construye al entrar a esta secci├│n.
+        if (_seccion == _SeccionSecretaria.horariosEspeciales)
+          const Box(
+            HorariosEspecialesSection(),
+          ),
+
+        // Gesti├│n de clientes.
+        Box(
+          Visibility(
+            visible: _seccion == _SeccionSecretaria.gestionarCliente,
+            maintainState: true,
+            child: const GestionClientesSection(),
+          ),
         ),
-      ),
-      Box(
-        Visibility(
-          visible: _seccion == _SeccionSecretaria.gestionarCliente,
-          maintainState: true,
-          child: const GestionClientesSection(),
+
+        // Agenda de citas.
+        Box(
+          Visibility(
+            visible: _seccion == _SeccionSecretaria.agendarCita,
+            maintainState: true,
+            child: const AgendarCitaSection(),
+          ),
         ),
-      ),
-      Box(
-        Visibility(
-          visible: _seccion == _SeccionSecretaria.agendarCita,
-          maintainState: true,
-          child: const AgendarCitaSection(),
+
+        // Consulta de citas.
+        Box(
+          Visibility(
+            visible: _seccion == _SeccionSecretaria.consultarCitas,
+            maintainState: true,
+            child: const ConsultarCitasSection(),
+          ),
         ),
-      ),
-      Box(
-        Visibility(
-          visible: _seccion == _SeccionSecretaria.consultarCitas,
-          maintainState: true,
-          child: const ConsultarCitasSection(),
-        ),
-      ),
-    ]);
+      ],
+    );
   }
 }
 
 enum _SeccionSecretaria {
   horarios,
+  horariosEspeciales,
   gestionarCliente,
   agendarCita,
   consultarCitas,
@@ -182,32 +235,42 @@ class _SeccionChip extends StatelessWidget {
   final VoidCallback onSelected;
 
   @override
-  Widget build(BuildContext context) => ChoiceChip(
-        avatar: Icon(icon,
-            size: 18, color: selected ? Colors.white : AppColors.pizarra),
-        label: Text(label),
-        selected: selected,
-        showCheckmark: false,
-        onSelected: (_) => onSelected(),
-        selectedColor: AppColors.indigo,
-        side: BorderSide.none,
-        labelStyle: ts(14,
-            weight: kSemi, color: selected ? Colors.white : AppColors.ink),
-      );
+  Widget build(BuildContext context) {
+    return ChoiceChip(
+      avatar: Icon(
+        icon,
+        size: 18,
+        color: selected ? Colors.white : AppColors.pizarra,
+      ),
+      label: Text(label),
+      selected: selected,
+      showCheckmark: false,
+      onSelected: (_) => onSelected(),
+      selectedColor: AppColors.indigo,
+      side: BorderSide.none,
+      labelStyle: ts(
+        14,
+        weight: kSemi,
+        color: selected ? Colors.white : AppColors.ink,
+      ),
+    );
+  }
 }
 
 class _Header extends StatelessWidget {
   const _Header();
 
   @override
-  Widget build(BuildContext context) => const PageTitle(
-        eyebrow: 'Panel de Secretaria',
-        title: 'Gestión de Secretaría',
-        subtitle: 'Clases, horarios, citas y clientes.',
-      );
+  Widget build(BuildContext context) {
+    return const PageTitle(
+      eyebrow: 'Panel de Secretaria',
+      title: 'Gesti├│n de Secretar├¡a',
+      subtitle: 'Clases, horarios, citas y clientes.',
+    );
+  }
 }
 
-// ── Sección de Clases ──────────────────────────────────────────────────────
+// ÔöÇÔöÇ Secci├│n de Clases ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 
 class _ClasesSection extends StatelessWidget {
   const _ClasesSection();
@@ -215,74 +278,92 @@ class _ClasesSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final loading = context.select<ClasesController, bool>((c) => c.loading);
-    final error = context.select<ClasesController, String?>((c) => c.error);
-    final clases =
-        context.select<ClasesController, List<Clase>>((c) => c.clases);
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const Expanded(
-              child:
-                  SectionHeader(eyebrow: 'Catálogo activo', title: 'Clases')),
-          const SizedBox(width: 16),
-          PrimaryButton(
-            label: 'Nueva clase',
-            icon: Icons.add,
-            onPressed: () => _crearClase(context),
-          ),
-        ],
-      ),
-      const SizedBox(height: 20),
-      if (error != null)
-        ErrorPanel(
-          message: error,
-          onRetry: () => context.read<ClasesController>().load(),
-        )
-      else if (loading)
-        const SkeletonScope(
-          child: Column(children: [
-            SkeletonCard(height: 120),
-            SizedBox(height: 12),
-            SkeletonCard(height: 120),
-            SizedBox(height: 12),
-            SkeletonCard(height: 120),
-          ]),
-        )
-      else if (clases.isEmpty)
-        _EmptyState(
-          mensaje: 'No hay clases registradas.',
-          onAction: () => _crearClase(context),
-          labelAction: 'Crear primera clase',
-        )
-      else
-        // REGLA 4: lista que puede crecer → ListView.builder.
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: clases.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, i) => _ClaseCard(clase: clases[i]),
+    final error = context.select<ClasesController, String?>((c) => c.error);
+
+    final clases = context.select<ClasesController, List<Clase>>(
+      (c) => c.clases,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Expanded(
+              child: SectionHeader(
+                eyebrow: 'Cat├ílogo activo',
+                title: 'Clases',
+              ),
+            ),
+            const SizedBox(width: 16),
+            PrimaryButton(
+              label: 'Nueva clase',
+              icon: Icons.add,
+              onPressed: () => _crearClase(context),
+            ),
+          ],
         ),
-    ]);
+        const SizedBox(height: 20),
+        if (error != null)
+          ErrorPanel(
+            message: error,
+            onRetry: () => context.read<ClasesController>().load(),
+          )
+        else if (loading)
+          const SkeletonScope(
+            child: Column(
+              children: [
+                SkeletonCard(height: 120),
+                SizedBox(height: 12),
+                SkeletonCard(height: 120),
+                SizedBox(height: 12),
+                SkeletonCard(height: 120),
+              ],
+            ),
+          )
+        else if (clases.isEmpty)
+          _EmptyState(
+            mensaje: 'No hay clases registradas.',
+            onAction: () => _crearClase(context),
+            labelAction: 'Crear primera clase',
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: clases.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (_, i) => _ClaseCard(clase: clases[i]),
+          ),
+      ],
+    );
   }
 
   Future<void> _crearClase(BuildContext context) async {
     final result = await ClaseFormDialog.show(context);
+
     if (result == null || !context.mounted) return;
+
     final ctrl = context.read<ClasesController>();
+
     await ctrl.crearClase(
-        nombre: result.nombre, descripcion: result.descripcion);
+      nombre: result.nombre,
+      descripcion: result.descripcion,
+    );
+
     if (!context.mounted) return;
+
     _mostrarSnackError(context);
   }
 }
 
-// ── Tarjeta de Clase ───────────────────────────────────────────────────────
+// ÔöÇÔöÇ Tarjeta de Clase ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 
 class _ClaseCard extends StatelessWidget {
   const _ClaseCard({required this.clase});
+
   final Clase clase;
 
   @override
@@ -292,54 +373,69 @@ class _ClaseCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cabecera de la clase
+          // Cabecera de la clase.
           Container(
             padding: const EdgeInsets.fromLTRB(20, 18, 12, 18),
             decoration: BoxDecoration(
               color: clase.activa ? AppColors.indigo : AppColors.niebla,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(17)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(17),
+              ),
             ),
-            child: Row(children: [
-              Expanded(
-                child: Column(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         clase.nombre.toUpperCase(),
-                        style: display(24,
-                            color: clase.activa
-                                ? Colors.white
-                                : AppColors.pizarra),
+                        style: display(
+                          24,
+                          color:
+                              clase.activa ? Colors.white : AppColors.pizarra,
+                        ),
                       ),
                       if (clase.descripcion != null) ...[
                         const SizedBox(height: 4),
                         Text(
                           clase.descripcion!,
-                          style: ts(14,
-                              color: clase.activa
-                                  ? AppColors.onIndigoMuted
-                                  : AppColors.pizarra),
+                          style: ts(
+                            14,
+                            color: clase.activa
+                                ? AppColors.onIndigoMuted
+                                : AppColors.pizarra,
+                          ),
                         ),
                       ],
-                    ]),
-              ),
-              if (!clase.activa)
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFBE9E7),
-                    borderRadius: BorderRadius.circular(99),
+                    ],
                   ),
-                  child: Text('Inhabilitada',
-                      style: ts(12, weight: kSemi, color: AppColors.danger)),
                 ),
-              _ClaseMenu(clase: clase),
-            ]),
+                if (!clase.activa)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFBE9E7),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(
+                      'Inhabilitada',
+                      style: ts(
+                        12,
+                        weight: kSemi,
+                        color: AppColors.danger,
+                      ),
+                    ),
+                  ),
+                _ClaseMenu(clase: clase),
+              ],
+            ),
           ),
 
-          // Horarios de la clase
+          // Horarios de la clase.
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
             child: Column(
@@ -348,18 +444,34 @@ class _ClaseCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Horarios de atención',
-                        style: ts(13, weight: kSemi, color: AppColors.pizarra)),
+                    Text(
+                      'Horarios de atenci├│n',
+                      style: ts(
+                        13,
+                        weight: kSemi,
+                        color: AppColors.pizarra,
+                      ),
+                    ),
                     if (clase.activa)
                       TextButton.icon(
                         onPressed: () => _agregarHorario(context, clase),
-                        icon: const Icon(Icons.add, size: 15),
-                        label: Text('Agregar horario',
-                            style: ts(13,
-                                weight: kSemi, color: AppColors.cobalto)),
+                        icon: const Icon(
+                          Icons.add,
+                          size: 15,
+                        ),
+                        label: Text(
+                          'Agregar horario',
+                          style: ts(
+                            13,
+                            weight: kSemi,
+                            color: AppColors.cobalto,
+                          ),
+                        ),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           minimumSize: Size.zero,
                         ),
                       ),
@@ -368,23 +480,37 @@ class _ClaseCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 if (clase.horarios.isEmpty)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text('Sin horarios registrados.',
-                        style: ts(13, color: AppColors.pizarra)),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      'Sin horarios registrados.',
+                      style: ts(
+                        13,
+                        color: AppColors.pizarra,
+                      ),
+                    ),
                   )
                 else
-                  // REGLA 4: conjunto acotado (horarios de una clase).
                   Column(
                     children: [
                       for (int i = 0; i < clase.horarios.length; i++)
                         _HorarioRow(
                           horario: clase.horarios[i],
-                          onEditar: clase.activa
-                              ? () => _editarHorario(context, clase, i)
+                          onEditar: (clase.activa && clase.horarios[i].activo)
+                              ? () => _editarHorario(
+                                    context,
+                                    clase,
+                                    i,
+                                  )
                               : null,
                           onInhabilitar:
                               (clase.activa && clase.horarios[i].activo)
-                                  ? () => _inhabilitarHorario(context, clase, i)
+                                  ? () => _inhabilitarHorario(
+                                        context,
+                                        clase,
+                                        i,
+                                      )
                                   : null,
                         ),
                     ],
@@ -397,123 +523,211 @@ class _ClaseCard extends StatelessWidget {
     );
   }
 
-  Future<void> _agregarHorario(BuildContext context, Clase clase) async {
+  Future<void> _agregarHorario(
+    BuildContext context,
+    Clase clase,
+  ) async {
     final horario = await HorarioFormDialog.show(context);
+
     if (horario == null || !context.mounted) return;
+
     final ctrl = context.read<ClasesController>();
+
     await ctrl.agregarHorario(clase.id, horario);
+
     if (!context.mounted) return;
+
     _mostrarSnackError(context);
   }
 
   Future<void> _editarHorario(
-      BuildContext context, Clase clase, int index) async {
-    final horario =
-        await HorarioFormDialog.show(context, horario: clase.horarios[index]);
+    BuildContext context,
+    Clase clase,
+    int index,
+  ) async {
+    final horario = await HorarioFormDialog.show(
+      context,
+      horario: clase.horarios[index],
+    );
+
     if (horario == null || !context.mounted) return;
+
     final ctrl = context.read<ClasesController>();
-    await ctrl.actualizarHorario(clase.id, index, horario);
+
+    await ctrl.actualizarHorario(
+      clase.id,
+      index,
+      horario,
+    );
+
     if (!context.mounted) return;
+
     _mostrarSnackError(context);
   }
 
   Future<void> _inhabilitarHorario(
-      BuildContext context, Clase clase, int index) async {
+    BuildContext context,
+    Clase clase,
+    int index,
+  ) async {
     final confirmar = await _confirmarDialog(
       context,
       titulo: 'Inhabilitar horario',
-      mensaje:
-          '¿Inhabilitar el horario ${clase.horarios[index].diasLabel} ${clase.horarios[index].rangoHora}?',
+      mensaje: '┬┐Inhabilitar el horario ${clase.horarios[index].diasLabel} '
+          '${clase.horarios[index].rangoHora}?',
     );
+
     if (!confirmar || !context.mounted) return;
+
     final ctrl = context.read<ClasesController>();
+
     await ctrl.inhabilitarHorario(clase.id, index);
+
     if (!context.mounted) return;
+
     _mostrarSnackError(context);
   }
 }
 
-// ── Menú de opciones de Clase ──────────────────────────────────────────────
+// ÔöÇÔöÇ Men├║ de opciones de Clase ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 
 class _ClaseMenu extends StatelessWidget {
   const _ClaseMenu({required this.clase});
+
   final Clase clase;
 
   @override
   Widget build(BuildContext context) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
       onSelected: (v) => _onSelected(context, v),
       itemBuilder: (_) => [
         if (clase.activa) ...[
           PopupMenuItem(
             value: 'editar',
-            child: Row(children: [
-              const Icon(Icons.edit_outlined, size: 18),
-              const SizedBox(width: 10),
-              Text('Editar clase', style: ts(14)),
-            ]),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.edit_outlined,
+                  size: 18,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Editar clase',
+                  style: ts(14),
+                ),
+              ],
+            ),
           ),
           PopupMenuItem(
             value: 'inhabilitar',
-            child: Row(children: [
-              const Icon(Icons.block, size: 18, color: AppColors.danger),
-              const SizedBox(width: 10),
-              Text('Inhabilitar', style: ts(14, color: AppColors.danger)),
-            ]),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.block,
+                  size: 18,
+                  color: AppColors.danger,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Inhabilitar',
+                  style: ts(
+                    14,
+                    color: AppColors.danger,
+                  ),
+                ),
+              ],
+            ),
           ),
         ] else
           PopupMenuItem(
             value: 'reactivar',
-            child: Row(children: [
-              const Icon(Icons.check_circle_outline,
-                  size: 18, color: AppColors.success),
-              const SizedBox(width: 10),
-              Text('Reactivar', style: ts(14, color: AppColors.success)),
-            ]),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.check_circle_outline,
+                  size: 18,
+                  color: AppColors.success,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Reactivar',
+                  style: ts(
+                    14,
+                    color: AppColors.success,
+                  ),
+                ),
+              ],
+            ),
           ),
       ],
     );
   }
 
-  Future<void> _onSelected(BuildContext context, String accion) async {
+  Future<void> _onSelected(
+    BuildContext context,
+    String accion,
+  ) async {
     if (accion == 'editar') {
-      final result = await ClaseFormDialog.show(context, clase: clase);
+      final result = await ClaseFormDialog.show(
+        context,
+        clase: clase,
+      );
+
       if (result == null || !context.mounted) return;
+
       final ctrl = context.read<ClasesController>();
-      await ctrl.actualizarClase(clase.id,
-          nombre: result.nombre, descripcion: result.descripcion);
+
+      await ctrl.actualizarClase(
+        clase.id,
+        nombre: result.nombre,
+        descripcion: result.descripcion,
+      );
+
       if (!context.mounted) return;
+
       _mostrarSnackError(context);
     } else if (accion == 'inhabilitar') {
       final confirmar = await _confirmarDialog(
         context,
         titulo: 'Inhabilitar clase',
-        mensaje:
-            '¿Inhabilitar la clase "${clase.nombre}"? Todos sus horarios quedarán inactivos.',
+        mensaje: '┬┐Inhabilitar la clase "${clase.nombre}"? '
+            'Todos sus horarios quedar├ín inactivos.',
       );
+
       if (!confirmar || !context.mounted) return;
+
       final ctrl = context.read<ClasesController>();
+
       await ctrl.inhabilitarClase(clase.id);
+
       if (!context.mounted) return;
+
       _mostrarSnackError(context);
     } else if (accion == 'reactivar') {
       final confirmar = await _confirmarDialog(
         context,
         titulo: 'Reactivar clase',
-        mensaje: '¿Reactivar la clase "${clase.nombre}"?',
+        mensaje: '┬┐Reactivar la clase "${clase.nombre}"?',
       );
+
       if (!confirmar || !context.mounted) return;
+
       final ctrl = context.read<ClasesController>();
+
       await ctrl.reactivarClase(clase.id);
+
       if (!context.mounted) return;
+
       _mostrarSnackError(context);
     }
   }
 }
 
-// ── Fila de Horario ────────────────────────────────────────────────────────
+// ÔöÇÔöÇ Fila de Horario ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 
 class _HorarioRow extends StatelessWidget {
   const _HorarioRow({
@@ -521,113 +735,190 @@ class _HorarioRow extends StatelessWidget {
     this.onEditar,
     this.onInhabilitar,
   });
+
   final HorarioClase horario;
   final VoidCallback? onEditar;
   final VoidCallback? onInhabilitar;
 
   @override
   Widget build(BuildContext context) {
+    final fechaInicio = horario.fechaInicio;
+    final fechaFin = horario.fechaFin;
+
+    final tieneVigencia = fechaInicio != null || fechaFin != null;
+
+    final vigencia = [
+      'Vigencia:',
+      fechaInicio ?? 'Sin inicio definido',
+      'ÔÇö',
+      fechaFin ?? 'Sin fin definido',
+    ].join(' ');
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 10,
+        ),
         decoration: BoxDecoration(
           color: horario.activo ? AppColors.niebla : AppColors.track,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(children: [
-          Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(horario.diasLabel,
-                  style: ts(14,
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    horario.diasLabel,
+                    style: ts(
+                      14,
                       weight: kSemi,
-                      color:
-                          horario.activo ? AppColors.ink : AppColors.pizarra)),
-              Text(horario.rangoHora,
-                  style: ts(13,
-                      color: horario.activo
-                          ? AppColors.pizarra
-                          : AppColors.pizarra)),
-            ]),
-          ),
-          _EstadoPill(activo: horario.activo, small: true),
-          if (onEditar != null || onInhabilitar != null) ...[
-            const SizedBox(width: 4),
-            if (onEditar != null)
-              IconButton(
-                icon: const Icon(Icons.edit_outlined, size: 16),
-                color: AppColors.cobalto,
-                tooltip: 'Editar horario',
-                onPressed: onEditar,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                padding: EdgeInsets.zero,
+                      color: horario.activo ? AppColors.ink : AppColors.pizarra,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    horario.rangoHora,
+                    style: ts(
+                      13,
+                      color: AppColors.pizarra,
+                    ),
+                  ),
+                  if (tieneVigencia) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      vigencia,
+                      style: ts(
+                        12,
+                        color: AppColors.pizarra,
+                      ),
+                    ),
+                  ],
+                ],
               ),
-            if (onInhabilitar != null)
-              IconButton(
-                icon: const Icon(Icons.block, size: 16),
-                color: AppColors.danger,
-                tooltip: 'Inhabilitar horario',
-                onPressed: onInhabilitar,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                padding: EdgeInsets.zero,
-              ),
+            ),
+            _EstadoPill(
+              activo: horario.activo,
+              small: true,
+            ),
+            if (onEditar != null || onInhabilitar != null) ...[
+              const SizedBox(width: 4),
+              if (onEditar != null)
+                IconButton(
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    size: 16,
+                  ),
+                  color: AppColors.cobalto,
+                  tooltip: 'Editar horario',
+                  onPressed: onEditar,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+              if (onInhabilitar != null)
+                IconButton(
+                  icon: const Icon(
+                    Icons.block,
+                    size: 16,
+                  ),
+                  color: AppColors.danger,
+                  tooltip: 'Inhabilitar horario',
+                  onPressed: onInhabilitar,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+            ],
           ],
-        ]),
+        ),
       ),
     );
   }
 }
 
-// ── Helpers visuales ───────────────────────────────────────────────────────
+// ÔöÇÔöÇ Helpers visuales ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 
 class _EstadoPill extends StatelessWidget {
-  const _EstadoPill({required this.activo, this.small = false});
+  const _EstadoPill({
+    required this.activo,
+    this.small = false,
+  });
+
   final bool activo;
   final bool small;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: small ? 8 : 10,
-          vertical: small ? 3 : 5,
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: small ? 8 : 10,
+        vertical: small ? 3 : 5,
+      ),
+      decoration: BoxDecoration(
+        color: activo ? const Color(0xFFE6F4EE) : const Color(0xFFFBE9E7),
+        borderRadius: BorderRadius.circular(99),
+      ),
+      child: Text(
+        activo ? 'Activo' : 'Inhabilitado',
+        style: ts(
+          small ? 11 : 12,
+          weight: kSemi,
+          color: activo ? AppColors.success : AppColors.danger,
         ),
-        decoration: BoxDecoration(
-          color: activo ? const Color(0xFFE6F4EE) : const Color(0xFFFBE9E7),
-          borderRadius: BorderRadius.circular(99),
-        ),
-        child: Text(
-          activo ? 'Activo' : 'Inhabilitado',
-          style: ts(small ? 11 : 12,
-              weight: kSemi,
-              color: activo ? AppColors.success : AppColors.danger),
-        ),
-      );
+      ),
+    );
+  }
 }
 
 class _EmptyState extends StatelessWidget {
-  const _EmptyState(
-      {required this.mensaje,
-      required this.onAction,
-      required this.labelAction});
+  const _EmptyState({
+    required this.mensaje,
+    required this.onAction,
+    required this.labelAction,
+  });
+
   final String mensaje;
   final VoidCallback onAction;
   final String labelAction;
 
   @override
-  Widget build(BuildContext context) => Panel(
-        child: Column(children: [
-          const Icon(Icons.event_note_outlined,
-              size: 48, color: AppColors.pizarra),
+  Widget build(BuildContext context) {
+    return Panel(
+      child: Column(
+        children: [
+          const Icon(
+            Icons.event_note_outlined,
+            size: 48,
+            color: AppColors.pizarra,
+          ),
           const SizedBox(height: 12),
-          Text(mensaje, style: ts(15, color: AppColors.pizarra)),
+          Text(
+            mensaje,
+            style: ts(
+              15,
+              color: AppColors.pizarra,
+            ),
+          ),
           const SizedBox(height: 16),
-          PrimaryButton(label: labelAction, onPressed: onAction),
-        ]),
-      );
+          PrimaryButton(
+            label: labelAction,
+            onPressed: onAction,
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-// ── Utilidades ─────────────────────────────────────────────────────────────
+// ÔöÇÔöÇ Utilidades ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
 
 Future<bool> _confirmarDialog(
   BuildContext context, {
@@ -637,34 +928,61 @@ Future<bool> _confirmarDialog(
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Text(titulo, style: display(22)),
-      content: Text(mensaje, style: ts(15)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      title: Text(
+        titulo,
+        style: display(22),
+      ),
+      content: Text(
+        mensaje,
+        style: ts(15),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(ctx, false),
-          child: Text('Cancelar',
-              style: ts(14, weight: kSemi, color: AppColors.pizarra)),
+          child: Text(
+            'Cancelar',
+            style: ts(
+              14,
+              weight: kSemi,
+              color: AppColors.pizarra,
+            ),
+          ),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(ctx, true),
           style: FilledButton.styleFrom(
             backgroundColor: AppColors.danger,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
-          child: Text('Confirmar',
-              style: ts(14, weight: kSemi, color: Colors.white)),
+          child: Text(
+            'Confirmar',
+            style: ts(
+              14,
+              weight: kSemi,
+              color: Colors.white,
+            ),
+          ),
         ),
       ],
     ),
   );
+
   return result ?? false;
 }
 
 void _mostrarSnackError(BuildContext context) {
   final err = context.read<ClasesController>().lastActionError;
+
   if (err != null && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(err),
+      ),
+    );
   }
 }

@@ -2,6 +2,7 @@ import '../../../core/base_controller.dart';
 import '../models/clase.dart';
 import '../models/horario_clase.dart';
 import '../services/clases_service.dart';
+import '../../../core/api_exception.dart';
 
 class ClasesController extends BaseController {
   ClasesController(this._service);
@@ -12,7 +13,8 @@ class ClasesController extends BaseController {
   List<Clase> get clases => _clases;
 
   List<Clase> get clasesActivas => _clases.where((c) => c.activa).toList();
-  List<Clase> get clasesInhabilitadas => _clases.where((c) => !c.activa).toList();
+  List<Clase> get clasesInhabilitadas =>
+      _clases.where((c) => !c.activa).toList();
 
   @override
   Future<void> fetch() async {
@@ -24,7 +26,8 @@ class ClasesController extends BaseController {
   Future<void> crearClase({required String nombre, String? descripcion}) async {
     _setBusy(true);
     try {
-      final nueva = await _service.crearClase(nombre: nombre, descripcion: descripcion);
+      final nueva =
+          await _service.crearClase(nombre: nombre, descripcion: descripcion);
       _clases = [..._clases, nueva];
     } catch (_) {
       _setError('No se pudo crear la clase. Inténtalo de nuevo.');
@@ -32,10 +35,12 @@ class ClasesController extends BaseController {
     _setBusy(false);
   }
 
-  Future<void> actualizarClase(String id, {String? nombre, String? descripcion}) async {
+  Future<void> actualizarClase(String id,
+      {String? nombre, String? descripcion}) async {
     _setBusy(true);
     try {
-      final actualizada = await _service.actualizarClase(id, nombre: nombre, descripcion: descripcion);
+      final actualizada = await _service.actualizarClase(id,
+          nombre: nombre, descripcion: descripcion);
       _clases = [for (final c in _clases) c.id == id ? actualizada : c];
     } catch (_) {
       _setError('No se pudo actualizar la clase. Inténtalo de nuevo.');
@@ -46,7 +51,10 @@ class ClasesController extends BaseController {
   Future<void> inhabilitarClase(String id) async {
     // Actualización optimista (REGLA 2).
     final original = _clases.firstWhere((c) => c.id == id);
-    _clases = [for (final c in _clases) c.id == id ? c.copyWith(estado: 'Inhabilitada') : c];
+    _clases = [
+      for (final c in _clases)
+        c.id == id ? c.copyWith(estado: 'Inhabilitada') : c
+    ];
     notify();
 
     try {
@@ -55,14 +63,17 @@ class ClasesController extends BaseController {
     } catch (_) {
       // Revertir si falla.
       _clases = [for (final c in _clases) c.id == id ? original : c];
-      _setError('No se pudo inhabilitar la clase. Los cambios fueron revertidos.');
+      _setError(
+          'No se pudo inhabilitar la clase. Los cambios fueron revertidos.');
     }
     notify();
   }
 
   Future<void> reactivarClase(String id) async {
     final original = _clases.firstWhere((c) => c.id == id);
-    _clases = [for (final c in _clases) c.id == id ? c.copyWith(estado: 'Activo') : c];
+    _clases = [
+      for (final c in _clases) c.id == id ? c.copyWith(estado: 'Activo') : c
+    ];
     notify();
 
     try {
@@ -70,7 +81,8 @@ class ClasesController extends BaseController {
       _clases = [for (final c in _clases) c.id == id ? confirmada : c];
     } catch (_) {
       _clases = [for (final c in _clases) c.id == id ? original : c];
-      _setError('No se pudo reactivar la clase. Los cambios fueron revertidos.');
+      _setError(
+          'No se pudo reactivar la clase. Los cambios fueron revertidos.');
     }
     notify();
   }
@@ -79,24 +91,43 @@ class ClasesController extends BaseController {
 
   Future<void> agregarHorario(String idClase, HorarioClase horario) async {
     _setBusy(true);
+
     try {
       final actualizada = await _service.agregarHorario(idClase, horario);
-      _clases = [for (final c in _clases) c.id == idClase ? actualizada : c];
+
+      _clases = [
+        for (final c in _clases) c.id == idClase ? actualizada : c,
+      ];
+    } on ApiException catch (e) {
+      _setError(e.mensaje);
     } catch (_) {
       _setError('No se pudo agregar el horario. Inténtalo de nuevo.');
+    } finally {
+      _setBusy(false);
     }
-    _setBusy(false);
   }
 
-  Future<void> actualizarHorario(String idClase, int index, HorarioClase horario) async {
+  Future<void> actualizarHorario(
+    String idClase,
+    int index,
+    HorarioClase horario,
+  ) async {
     _setBusy(true);
+
     try {
-      final actualizada = await _service.actualizarHorario(idClase, index, horario);
-      _clases = [for (final c in _clases) c.id == idClase ? actualizada : c];
+      final actualizada =
+          await _service.actualizarHorario(idClase, index, horario);
+
+      _clases = [
+        for (final c in _clases) c.id == idClase ? actualizada : c,
+      ];
+    } on ApiException catch (e) {
+      _setError(e.mensaje);
     } catch (_) {
       _setError('No se pudo actualizar el horario. Inténtalo de nuevo.');
+    } finally {
+      _setBusy(false);
     }
-    _setBusy(false);
   }
 
   Future<void> inhabilitarHorario(String idClase, int index) async {
@@ -104,7 +135,10 @@ class ClasesController extends BaseController {
     final claseActual = _clases.firstWhere((c) => c.id == idClase);
     final horariosOpt = [...claseActual.horarios];
     horariosOpt[index] = horariosOpt[index].copyWith(estado: 'Inhabilitado');
-    _clases = [for (final c in _clases) c.id == idClase ? c.copyWith(horarios: horariosOpt) : c];
+    _clases = [
+      for (final c in _clases)
+        c.id == idClase ? c.copyWith(horarios: horariosOpt) : c
+    ];
     notify();
 
     try {
@@ -112,7 +146,8 @@ class ClasesController extends BaseController {
       _clases = [for (final c in _clases) c.id == idClase ? confirmada : c];
     } catch (_) {
       _clases = [for (final c in _clases) c.id == idClase ? claseActual : c];
-      _setError('No se pudo inhabilitar el horario. Los cambios fueron revertidos.');
+      _setError(
+          'No se pudo inhabilitar el horario. Los cambios fueron revertidos.');
     }
     notify();
   }
