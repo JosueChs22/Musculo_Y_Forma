@@ -85,3 +85,12 @@ assets/fonts/  Barlow y Barlow Condensed (fuentes locales)
 ```
 
 Reglas completas del proyecto: ver `CLAUDE.md`.
+
+## Publicar la versión web
+
+La política de seguridad de contenido (CSP) no va en `web/index.html` porque bloquea el modo debug de `flutter run`.
+Al publicar `build/web`, configúrala como **cabecera** del servidor (también permite agregar `frame-ancestors 'none'`):
+
+```
+Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
+```
