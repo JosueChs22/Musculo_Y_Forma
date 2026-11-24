@@ -8,9 +8,10 @@ services:
     # --release ya hace tree-shaking de íconos (MaterialIcons 1,6 MB -> 16 KB) y minifica.
     # --no-wasm-dry-run solo evita compilar a Wasm "de prueba" (build más rápido, mismo resultado).
     # No se usa --wasm todavía: hay que probarlo antes en Safari/iOS (cae a JS si no hay WasmGC).
-    # Render no trae Flutter: se descarga la misma versión que usa el equipo y se compila la web
+    # Render no trae Flutter: se descarga la misma versión que usa el equipo y se compila la web.
+    # Render guarda $HOME/flutter en su caché entre builds: si ya existe se reutiliza (más rápido).
     buildCommand: >-
-      git clone https://github.com/flutter/flutter.git --depth 1 -b 3.47.6 "$HOME/flutter" &&
+      (test -x "$HOME/flutter/bin/flutter" || git clone https://github.com/flutter/flutter.git --depth 1 -b 3.47.6 "$HOME/flutter") &&
       export PATH="$HOME/flutter/bin:$PATH" &&
       flutter config --no-analytics --enable-web &&
       flutter pub get &&
