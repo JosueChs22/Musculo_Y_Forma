@@ -38,8 +38,7 @@ class MedicionesEntrenadorView extends StatefulWidget {
   const MedicionesEntrenadorView({super.key});
 
   @override
-  State<MedicionesEntrenadorView> createState() =>
-      _MedicionesEntrenadorViewState();
+  State<MedicionesEntrenadorView> createState() => _MedicionesEntrenadorViewState();
 }
 
 class _MedicionesEntrenadorViewState extends State<MedicionesEntrenadorView> {
@@ -168,28 +167,31 @@ class _MedicionesEntrenadorViewState extends State<MedicionesEntrenadorView> {
         decoration: InputDecoration(labelText: label),
       );
 
-  Widget _seccion(String titulo, IconData icono, List<Widget> contenido,
-          {bool inicialAbierta = false}) =>
-      Container(
-        margin: const EdgeInsets.only(top: 12),
-        decoration: BoxDecoration(
+  Widget _seccion(String titulo, IconData icono, List<Widget> contenido, {bool inicialAbierta = false}) => Padding(
+        padding: const EdgeInsets.only(top: 12),
+        // Material (no DecoratedBox): el ListTile del ExpansionTile pinta sobre él
+        child: Material(
           color: AppColors.niebla,
           borderRadius: BorderRadius.circular(14),
-        ),
-        child: ExpansionTile(
-          initiallyExpanded: inicialAbierta,
-          leading: Icon(icono, color: AppColors.cobalto),
-          title: Text(titulo, style: ts(15, weight: kSemi)),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          // Campos en cuadrícula: 1 por fila en teléfono, hasta 3 en escritorio.
-          // Los espaciadores de la lista se descartan: la cuadrícula ya separa.
-          children: [
-            ResponsiveGrid(
-              desktopCols: 3,
-              spacing: 12,
-              children: [for (final w in contenido) if (w is! SizedBox) w],
-            ),
-          ],
+          clipBehavior: Clip.antiAlias,
+          child: ExpansionTile(
+            initiallyExpanded: inicialAbierta,
+            leading: Icon(icono, color: AppColors.cobalto),
+            title: Text(titulo, style: ts(15, weight: kSemi)),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            // Campos en cuadrícula: 1 por fila en teléfono, hasta 3 en escritorio.
+            // Los espaciadores de la lista se descartan: la cuadrícula ya separa.
+            children: [
+              ResponsiveGrid(
+                desktopCols: 3,
+                spacing: 12,
+                children: [
+                  for (final w in contenido)
+                    if (w is! SizedBox) w
+                ],
+              ),
+            ],
+          ),
         ),
       );
 
@@ -316,9 +318,7 @@ class _MedicionesEntrenadorViewState extends State<MedicionesEntrenadorView> {
                       onPressed: _guardando ? null : _seleccionarCliente,
                       icon: const Icon(Icons.person_search_outlined),
                       label: Text(
-                        _cliente == null
-                            ? 'Seleccionar cliente'
-                            : 'Cambiar cliente',
+                        _cliente == null ? 'Seleccionar cliente' : 'Cambiar cliente',
                       ),
                     ),
                     if (_cliente != null) ...[

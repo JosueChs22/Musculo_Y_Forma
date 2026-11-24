@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../../../core/skeleton.dart';
 import '../../../core/theme.dart';
 import '../../../core/widgets.dart';
+import '../../legal/controllers/consentimiento_controller.dart';
+import '../../legal/views/widgets/sin_consentimiento_salud.dart';
 import '../controllers/progreso_controller.dart';
 import '../models/body_metric.dart';
 import '../models/inbody_summary.dart';
@@ -21,6 +23,16 @@ class ProgresoView extends StatelessWidget {
     final error = context.select<ProgresoController, String?>((c) => c.error);
     final history = context.select<ProgresoController, List<Measurement>>((c) => c.history);
     final tableMode = MediaQuery.sizeOf(context).width >= _tableBreakpoint + 252;
+    final conConsentimiento =
+        context.select<ConsentimientoController, bool>((c) => c.datosSalud);
+
+    // Ley 8968: sin consentimiento expreso no se muestran datos de salud
+    if (!conConsentimiento) {
+      return const SliverPage(slivers: [
+        Box(_Header(), gapAfter: 24),
+        Box(SinConsentimientoSalud()),
+      ]);
+    }
 
     if (error != null) {
       return SliverPage(slivers: [

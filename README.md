@@ -94,3 +94,17 @@ Al publicar `build/web`, configúrala como **cabecera** del servidor (también p
 ```
 Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'
 ```
+
+## Publicar en tiendas
+
+- **Identificador de la app:** `com.musculoyforma.app` (Android, iOS, macOS y Linux).
+- **Llave de subida (Android):** vive fuera del repo en `C:\Users\josue\.android-keys\gmyf-upload.jks` (alias `gmyf`), junto con una copia de `key.properties`.
+- **Haz respaldo** del `.jks` y de sus contraseñas en un lugar seguro (gestor de contraseñas, USB cifrada). Si se pierde, no se podrán publicar actualizaciones de la app en Google Play.
+- `android/key.properties` **no está en git** (ver `android/.gitignore`). Sin ese archivo, el build de release se firma con la llave debug, así que sirve para probar pero no para subir a Play.
+- Generar el paquete para Google Play:
+
+  ```bash
+  flutter build appbundle --release
+  ```
+
+  El archivo queda en `build/app/outputs/bundle/release/app-release.aab`.

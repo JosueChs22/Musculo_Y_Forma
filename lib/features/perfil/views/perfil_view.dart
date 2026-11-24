@@ -10,6 +10,8 @@ import '../../../core/widgets.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../auth/models/usuario.dart';
 import '../../auth/views/widgets/cambiar_contrasena_dialog.dart';
+import '../../legal/controllers/consentimiento_controller.dart';
+import '../../legal/views/widgets/privacidad_panel.dart';
 import '../controllers/perfil_controller.dart';
 import '../models/user_profile.dart';
 
@@ -33,7 +35,12 @@ class PerfilView extends StatelessWidget {
           const SizedBox(height: 16),
           _Entrenamiento(esCliente: usuario.rol == RolUsuario.cliente),
         ]),
-        derecha: _Acciones(usuario.rol),
+        derecha: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          _Acciones(usuario.rol),
+          const SizedBox(height: 16),
+          // Ley 8968: consentimiento de datos de salud y derechos ARCO
+          const PrivacidadPanel(),
+        ]),
       )),
     ]);
   }
@@ -138,6 +145,7 @@ class _Entrenamiento extends StatelessWidget {
     final loading = context.select<PerfilController, bool>((c) => c.loading);
     final error = context.select<PerfilController, String?>((c) => c.error);
     final p = context.select<PerfilController, UserProfile>((c) => c.profile);
+    final salud = context.select<ConsentimientoController, bool>((c) => c.datosSalud);
 
     if (error != null) return ErrorPanel(message: error, onRetry: () => context.read<PerfilController>().load());
     if (loading) return const SkeletonScope(child: SkeletonBox(height: 96, radius: 18));
@@ -145,8 +153,11 @@ class _Entrenamiento extends StatelessWidget {
     return Panel(
       child: Wrap(spacing: 32, runSpacing: 14, children: [
         _Dato('Entrenador asignado', p.coachName ?? 'Sin entrenador asignado'),
-        _Dato('Objetivo actual', p.goal ?? 'Sin definir'),
-        _Dato('Última medición', p.lastMeasurementLabel?.replaceFirst('Última medición · ', '') ?? 'Sin mediciones'),
+        // Sin consentimiento de salud no se muestra nada que venga de sus mediciones
+        if (salud) ...[
+          _Dato('Objetivo actual', p.goal ?? 'Sin definir'),
+          _Dato('Última medición', p.lastMeasurementLabel?.replaceFirst('Última medición · ', '') ?? 'Sin mediciones'),
+        ],
         if (esCliente) _Dato('Fecha de pago', p.fechaPago == null ? 'Sin registrar' : fechaCorta(p.fechaPago!)),
       ]),
     );

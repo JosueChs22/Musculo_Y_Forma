@@ -165,13 +165,29 @@ class _ClasesSection extends StatelessWidget {
         )
       else
         // REGLA 4: lista que puede crecer → ListView.builder.
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: clases.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, i) => _ClaseCard(clase: clases[i]),
-        ),
+        // Escritorio (≥900 px): dos clases por fila para no desperdiciar ancho.
+        LayoutBuilder(builder: (context, caja) {
+          final cols = caja.maxWidth >= 900 ? 2 : 1;
+          final filas = (clases.length / cols).ceil();
+          return ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: filas,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (_, f) => cols == 1
+                ? _ClaseCard(clase: clases[f])
+                : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    for (var c = 0; c < cols; c++) ...[
+                      if (c > 0) const SizedBox(width: 12),
+                      Expanded(
+                        child: f * cols + c < clases.length
+                            ? _ClaseCard(clase: clases[f * cols + c])
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ]),
+          );
+        }),
     ]);
   }
 

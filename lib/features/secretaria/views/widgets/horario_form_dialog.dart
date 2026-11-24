@@ -97,7 +97,8 @@ class _HorarioFormDialogState extends State<HorarioFormDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
-        child: Padding(
+        // Con poca altura (teclado abierto, ventana baja) el formulario se desplaza
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(28),
           child: Column(
             mainAxisSize: MainAxisSize.min,

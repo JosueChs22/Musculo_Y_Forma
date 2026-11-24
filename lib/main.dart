@@ -14,6 +14,9 @@ import 'features/auth/services/auth_service.dart';
 import 'features/ejercicios/controllers/ejercicios_controller.dart';
 import 'features/ejercicios/services/ejercicios_api_service.dart';
 import 'features/ejercicios/services/ejercicios_service.dart';
+import 'features/legal/controllers/consentimiento_controller.dart';
+import 'features/legal/services/legal_api_service.dart';
+import 'features/legal/services/legal_service.dart';
 import 'features/mediciones/services/mediciones_api_service.dart';
 import 'features/mediciones/services/mediciones_service.dart';
 import 'features/horarios/controllers/horarios_controller.dart';
@@ -56,7 +59,9 @@ class AppServices {
     CitasService? citas,
     MedicionesService? mediciones,
     AuthService? auth,
-  })  : _perfil = perfil,
+    LegalService? legal,
+  })  : _legal = legal,
+        _perfil = perfil,
         _rutinas = rutinas,
         _progreso = progreso,
         _clientes = clientes,
@@ -71,6 +76,10 @@ class AppServices {
   final CitasService? _citas;
   final MedicionesService? _mediciones;
   final AuthService? _auth;
+  final LegalService? _legal;
+
+  /// Consentimiento y derechos ARCO (Ley 8968).
+  LegalService get legal => _legal ?? LegalApiService();
 
   PerfilService get perfil => _perfil ?? PerfilApiService();
 
@@ -133,9 +142,18 @@ class AppRoot extends StatelessWidget {
           create: (_) => RutinasController(services.rutinas),
           update: (_, auth, c) => c!..usarUsuario(auth.usuario?.id),
         ),
-        ChangeNotifierProxyProvider<AuthController, ProgresoController>(
-          create: (_) => ProgresoController(services.progreso),
+        // Consentimiento (Ley 8968): el router lo usa para la pantalla bloqueante
+        ChangeNotifierProxyProvider<AuthController, ConsentimientoController>(
+          create: (_) => ConsentimientoController(services.legal),
           update: (_, auth, c) => c!..usarUsuario(auth.usuario?.id),
+        ),
+        // Mediciones = datos de salud: solo se piden con el consentimiento expreso del usuario
+        ChangeNotifierProxyProvider2<AuthController, ConsentimientoController,
+            ProgresoController>(
+          create: (_) => ProgresoController(services.progreso),
+          update: (_, auth, consentimiento, c) => c!
+            ..permitirDatosSalud(consentimiento.datosSalud)
+            ..usarUsuario(auth.usuario?.id),
         ),
         // Panel del Entrenador: catálogo de ejercicios y planes. Las vistas llaman a load() al abrirse (necesitan el token).
         Provider<EjerciciosService>(create: (_) => services.ejercicios),

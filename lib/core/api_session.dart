@@ -1,3 +1,5 @@
+import 'api_http.dart';
+
 /// URL base de la API. Por defecto apunta a Render; para probar contra la API
 /// local se corre la app con:
 ///   --dart-define=API_BASE=http://localhost:3000/api
@@ -32,7 +34,17 @@ String apiBaseSegura(String valor) {
 class ApiSession {
   ApiSession._();
 
-  static String? token;
+  static String? _token;
+
+  static String? get token => _token;
+
+  /// Al cambiar de sesión (login, cerrar sesión, otro usuario) se vacía la caché de
+  /// respuestas en memoria, así nadie ve datos de la sesión anterior.
+  static set token(String? valor) {
+    if (valor == _token) return;
+    _token = valor;
+    ApiHttp.limpiarCache();
+  }
 
   /// Se llama cuando la API rechaza el token (venció o la cuenta se inhabilitó).
   /// Lo registra el controlador de la sesión para cerrarla.

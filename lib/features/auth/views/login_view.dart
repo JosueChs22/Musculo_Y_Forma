@@ -6,6 +6,7 @@ import '../../../core/brand.dart';
 import '../../../core/theme.dart';
 import '../../../core/validators.dart';
 import '../../../core/widgets.dart';
+import '../../legal/views/widgets/enlaces_legales.dart';
 import '../controllers/auth_controller.dart';
 
 class LoginView extends StatefulWidget {
@@ -125,6 +126,9 @@ class _LoginViewState extends State<LoginView> {
                         style: ts(13, color: AppColors.pizarra),
                       ),
                     ],
+                    const SizedBox(height: 16),
+                    // Ley 8968: el aviso de privacidad se puede leer antes de ingresar
+                    const EnlacesLegales(),
                   ],
                 ),
               ),

@@ -228,17 +228,13 @@ class _DatosGenerales extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const Eyebrow('Tipo de plan'),
         const SizedBox(height: 8),
-        SegmentedButton<CategoriaPlan>(
-          segments: [
-            for (final cat in CategoriaPlan.values) ButtonSegment(value: cat, label: Text(cat.etiqueta)),
-          ],
-          selected: {c.categoria},
-          showSelectedIcon: false,
-          onSelectionChanged: habilitado ? (s) => c.cambiarCategoria(s.first) : null,
-          style: SegmentedButton.styleFrom(
-            selectedBackgroundColor: AppColors.indigo,
-            selectedForegroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+        // SegmentedPill ajusta el tamaño de letra al ancho: en teléfono "Entrenamiento" no se parte
+        IgnorePointer(
+          ignoring: !habilitado,
+          child: SegmentedPill<CategoriaPlan>(
+            opciones: [for (final cat in CategoriaPlan.values) (cat, cat.etiqueta)],
+            seleccion: c.categoria,
+            onCambio: c.cambiarCategoria,
           ),
         ),
         const SizedBox(height: 16),
@@ -295,13 +291,16 @@ class _Asignacion extends StatelessWidget {
           Row(mainAxisSize: MainAxisSize.min, children: [
             Avatar(cliente?.iniciales ?? '?', size: 44, bg: AppColors.indigoSoft, fg: AppColors.indigo),
             const SizedBox(width: 14),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              const Eyebrow('Asignado a'),
-              const SizedBox(height: 2),
-              Text(cliente?.nombre ?? 'Sin asignar', style: ts(16, weight: kSemi)),
-              if (cliente == null && controller.esNuevo)
-                Text('Puedes asignarlo ahora o después, desde la lista.', style: ts(13, color: AppColors.pizarra)),
-            ]),
+            // Flexible: en teléfono el texto se parte en vez de desbordar la fila
+            Flexible(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                const Eyebrow('Asignado a'),
+                const SizedBox(height: 2),
+                Text(cliente?.nombre ?? 'Sin asignar', style: ts(16, weight: kSemi)),
+                if (cliente == null && controller.esNuevo)
+                  Text('Puedes asignarlo ahora o después, desde la lista.', style: ts(13, color: AppColors.pizarra)),
+              ]),
+            ),
           ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
             SecondaryButton(
