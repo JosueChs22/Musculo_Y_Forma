@@ -24,37 +24,43 @@ class PerfilView extends StatelessWidget {
 
     return SliverPage(slivers: [
       const Box(PageTitle(eyebrow: 'Tu cuenta', title: 'Perfil'), gapAfter: 24),
-      Box(_Cuenta(usuario), gapAfter: 16),
-      Box(_Entrenamiento(esCliente: usuario.rol == RolUsuario.cliente), gapAfter: 16),
-      // Consultas del gimnasio, para todo usuario con sesión (RF-092, RF-093, RF-095)
-      Box(
-        SecondaryButton(
-          label: 'Horarios de clases',
-          icon: Icons.schedule_outlined,
-          onPressed: () => context.go('/horarios'),
-        ),
-        gapAfter: 12,
-      ),
-      Box(
-        SecondaryButton(label: 'Anuncios', icon: Icons.campaign_outlined, onPressed: () => context.go('/anuncios')),
-        gapAfter: 12,
-      ),
-      Box(
-        SecondaryButton(
-          label: 'Reglamento del gimnasio',
-          icon: Icons.gavel_outlined,
-          onPressed: () => context.go('/reglamento'),
-        ),
-        gapAfter: 24,
-      ),
-      // Paneles de trabajo del rol (en móvil se entra a ellos desde aquí)
-      for (final panel in panelesDe(usuario.rol))
-        Box(
-          SecondaryButton(label: panel.titulo, icon: panel.icono, onPressed: () => context.go(panel.ruta)),
-          gapAfter: 12,
-        ),
-      // RF-035: cambiar la contraseña de la cuenta con sesión iniciada
-      Box(
+      // Escritorio: datos a la izquierda y acciones en un panel lateral. Móvil: apilado.
+      Box(Columnas(
+        flexIzquierda: 2,
+        flexDerecha: 1,
+        izquierda: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          _Cuenta(usuario),
+          const SizedBox(height: 16),
+          _Entrenamiento(esCliente: usuario.rol == RolUsuario.cliente),
+        ]),
+        derecha: _Acciones(usuario.rol),
+      )),
+    ]);
+  }
+}
+
+/// Paneles de trabajo del rol, cambiar contraseña y cerrar sesión.
+class _Acciones extends StatelessWidget {
+  const _Acciones(this.rol);
+  final RolUsuario rol;
+
+  @override
+  Widget build(BuildContext context) {
+    final paneles = panelesDe(rol);
+    return Panel(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (paneles.isNotEmpty) ...[
+          const Eyebrow('Paneles de trabajo'),
+          const SizedBox(height: 10),
+          for (final panel in paneles) ...[
+            SecondaryButton(label: panel.titulo, icon: panel.icono, onPressed: () => context.go(panel.ruta)),
+            const SizedBox(height: 10),
+          ],
+          const SizedBox(height: 8),
+        ],
+        const Eyebrow('Seguridad'),
+        const SizedBox(height: 10),
+        // RF-035: cambiar la contraseña de la cuenta con sesión iniciada
         SecondaryButton(
           label: 'Cambiar contraseña',
           icon: Icons.lock_outline,
@@ -68,10 +74,8 @@ class PerfilView extends StatelessWidget {
             );
           },
         ),
-        gapAfter: 12,
-      ),
-      // Cerrar sesión: al limpiar la sesión, el router redirige solo a /login.
-      Box(
+        const SizedBox(height: 6),
+        // Cerrar sesión: al limpiar la sesión, el router redirige solo a /login.
         OutlinedButton.icon(
           onPressed: () => context.read<AuthController>().cerrarSesion(),
           icon: const Icon(Icons.logout),
@@ -83,8 +87,8 @@ class PerfilView extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
         ),
-      ),
-    ]);
+      ]),
+    );
   }
 }
 

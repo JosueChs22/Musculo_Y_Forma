@@ -132,9 +132,17 @@ class _PlanEditorViewState extends State<PlanEditorView> {
               ),
               gapAfter: 16,
             ),
-          Box(_DatosGenerales(controller: _c, nombre: _nombre, observaciones: _observaciones, habilitado: habilitado),
-              gapAfter: 16),
-          Box(_Asignacion(controller: _c, habilitado: habilitado, onElegir: _elegirCliente), gapAfter: 24),
+          // Escritorio: datos del plan y cliente asignado lado a lado
+          Box(
+            Columnas(
+              flexIzquierda: 3,
+              flexDerecha: 2,
+              espacio: 16,
+              izquierda: _DatosGenerales(controller: _c, nombre: _nombre, observaciones: _observaciones, habilitado: habilitado),
+              derecha: _Asignacion(controller: _c, habilitado: habilitado, onElegir: _elegirCliente),
+            ),
+            gapAfter: 24,
+          ),
           Box(
             SectionHeader(
               eyebrow: 'Ejercicios',
@@ -157,16 +165,13 @@ class _PlanEditorViewState extends State<PlanEditorView> {
             )
           else
             // REGLA 4: lista virtualizada (máximo 50 ejercicios por plan)
-            SliverList.builder(
+            // En escritorio, dos ejercicios por fila; cada uno conserva su clave
+            SliverRejilla(
               itemCount: ejercicios.length,
-              findChildIndexCallback: (key) {
-                if (key is! ValueKey<String>) return null;
-                final i = ejercicios.indexWhere((e) => e.idEjercicio == key.value);
-                return i == -1 ? null : i;
-              },
-              itemBuilder: (context, i) => Padding(
+              anchoMinimo: 500,
+              maxColumnas: 2,
+              itemBuilder: (context, i) => KeyedSubtree(
                 key: ValueKey(ejercicios[i].idEjercicio),
-                padding: const EdgeInsets.only(bottom: 12),
                 child: _FilaEjercicio(
                   controller: _c,
                   ejercicio: ejercicios[i],

@@ -13,21 +13,56 @@ import 'skeleton.dart';
 import 'theme.dart';
 import 'widgets.dart';
 
+/// Pestañas comunes a todo usuario con sesión: barra lateral (ancho) y barra inferior (móvil).
 const _tabs = <(String, String, IconData, IconData)>[
   ('Inicio', '/', Icons.home_outlined, Icons.home_rounded),
   ('Rutinas', '/rutinas', Icons.fitness_center_outlined, Icons.fitness_center),
   ('Progreso', '/progreso', Icons.bar_chart_outlined, Icons.bar_chart_rounded),
+  ('Horarios', '/horarios', Icons.schedule_outlined, Icons.schedule),
+  ('Anuncios', '/anuncios', Icons.campaign_outlined, Icons.campaign),
+  ('Reglamento', '/reglamento', Icons.gavel_outlined, Icons.gavel),
   ('Perfil', '/perfil', Icons.person_outline, Icons.person_rounded),
 ];
 
-/// Pantallas secundarias comunes: en la barra lateral (ancho) y desde Perfil (móvil).
-const _consultas = <(String, String, IconData)>[
-  ('Horarios de clases', '/horarios', Icons.schedule_outlined),
-  ('Anuncios', '/anuncios', Icons.campaign_outlined),
-  ('Reglamento', '/reglamento', Icons.gavel_outlined),
+/// Secciones del gimnasio: en móvil comparten una sola pestaña (iOS recomienda
+/// máximo 5) y se cambia entre ellas con un control segmentado.
+const _gimnasio = <(String, String)>[
+  ('/horarios', 'Horarios'),
+  ('/anuncios', 'Anuncios'),
+  ('/reglamento', 'Reglamento'),
+];
+bool _esGimnasio(String ruta) => _gimnasio.any((g) => g.$1 == ruta);
+
+/// Pestañas de la barra inferior en móvil.
+const _tabsMovil = <(String, String, IconData, IconData)>[
+  ('Inicio', '/', Icons.home_outlined, Icons.home_rounded),
+  ('Rutinas', '/rutinas', Icons.fitness_center_outlined, Icons.fitness_center),
+  ('Progreso', '/progreso', Icons.bar_chart_outlined, Icons.bar_chart_rounded),
+  ('Gimnasio', '/horarios', Icons.storefront_outlined, Icons.storefront),
+  ('Perfil', '/perfil', Icons.person_outline, Icons.person_rounded),
 ];
 
-const _altoCabecera = 60.0;
+/// Selector Horarios · Anuncios · Reglamento, arriba de esas pantallas en móvil.
+/// En pantallas anchas no se muestra: la barra lateral ya tiene las tres.
+class GimnasioSecciones extends StatelessWidget {
+  const GimnasioSecciones({super.key, required this.actual});
+  final String actual;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width >= 1000) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: SegmentedPill<String>(
+        opciones: _gimnasio,
+        seleccion: actual,
+        onCambio: (ruta) => context.go(ruta),
+      ),
+    );
+  }
+}
+
+const _altoCabecera = 52.0;
 const _altoBarra = 64.0;
 const _margenBarra = 12.0;
 
@@ -56,7 +91,7 @@ class AppShell extends StatelessWidget {
             Expanded(
               child: Align(
                 alignment: Alignment.topCenter,
-                child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1040), child: child),
+                child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 1320), child: child),
               ),
             ),
           ]),
@@ -113,7 +148,7 @@ class _MobileHeader extends StatelessWidget {
         padding: EdgeInsets.fromLTRB(20, arriba, 20, 0),
         decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.hover))),
         child: const Row(children: [
-          Expanded(child: BrandLockup()),
+          Expanded(child: BrandLockup(compacto: true)),
           _StreakChip(),
         ]),
       ),
@@ -146,7 +181,8 @@ class _TabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final abajo = MediaQuery.paddingOf(context).bottom;
-    final actual = _tabs.indexWhere((t) => t.$2 == location); // -1 dentro de un panel
+    // -1 dentro de un panel; las secciones del gimnasio marcan su pestaña
+    final actual = _tabsMovil.indexWhere((t) => t.$2 == location || (t.$1 == 'Gimnasio' && _esGimnasio(location)));
     final quieto = MediaQuery.disableAnimationsOf(context);
 
     return Padding(
@@ -167,9 +203,9 @@ class _TabBar extends StatelessWidget {
                     AnimatedAlign(
                       duration: quieto ? Duration.zero : const Duration(milliseconds: 320),
                       curve: Curves.easeOutCubic,
-                      alignment: Alignment(actual < 0 ? 0 : -1 + 2 * actual / (_tabs.length - 1), 0),
+                      alignment: Alignment(actual < 0 ? 0 : -1 + 2 * actual / (_tabsMovil.length - 1), 0),
                       child: FractionallySizedBox(
-                        widthFactor: 1 / _tabs.length,
+                        widthFactor: 1 / _tabsMovil.length,
                         heightFactor: 1,
                         child: AnimatedOpacity(
                           duration: kFast,
@@ -184,13 +220,13 @@ class _TabBar extends StatelessWidget {
                       ),
                     ),
                     Row(children: [
-                      for (var i = 0; i < _tabs.length; i++)
+                      for (var i = 0; i < _tabsMovil.length; i++)
                         Expanded(
                           child: _TabItem(
-                            label: _tabs[i].$1,
-                            icon: i == actual ? _tabs[i].$4 : _tabs[i].$3,
+                            label: _tabsMovil[i].$1,
+                            icon: i == actual ? _tabsMovil[i].$4 : _tabsMovil[i].$3,
                             selected: i == actual,
-                            onTap: () => context.go(_tabs[i].$2),
+                            onTap: () => context.go(_tabsMovil[i].$2),
                           ),
                         ),
                     ]),
@@ -267,16 +303,6 @@ class _Sidebar extends StatelessWidget {
                     label: label,
                     icon: !enPanel && location == path ? activo : icon,
                     selected: !enPanel && location == path,
-                    onTap: () => context.go(path),
-                  ),
-                // Consultas del gimnasio (en móvil se abren desde Perfil)
-                const SizedBox(height: 22),
-                const Padding(padding: EdgeInsets.only(left: 14, bottom: 8), child: Eyebrow('Gimnasio')),
-                for (final (label, path, icon) in _consultas)
-                  _SideItem(
-                    label: label,
-                    icon: icon,
-                    selected: location == path,
                     onTap: () => context.go(path),
                   ),
                 if (suyos.isNotEmpty) ...[

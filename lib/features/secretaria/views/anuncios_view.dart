@@ -74,12 +74,9 @@ class _AnunciosViewState extends State<AnunciosView> {
         ))
       else ...[
         // REGLA 4: la lista puede crecer, se arma con SliverList.builder
-        SliverList.builder(
+        SliverRejilla(
           itemCount: lista.length,
-          itemBuilder: (context, i) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _AnuncioTile(lista[i]),
-          ),
+          itemBuilder: (context, i) => _AnuncioTile(lista[i]),
         ),
         // REGLA 12: la API entrega los anuncios por páginas
         if (c.hayMas)

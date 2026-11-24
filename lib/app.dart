@@ -21,6 +21,7 @@ import 'features/planes/views/plan_editor_view.dart';
 import 'features/planes/views/citas_entrenador_view.dart';
 import 'features/planes/views/planes_view.dart';
 import 'features/progreso/views/progreso_view.dart';
+import 'features/rutinas/views/entrenamiento_view.dart';
 import 'features/rutinas/views/rutinas_view.dart';
 import 'features/anuncios/views/anuncios_cliente_view.dart';
 import 'features/reglamento/views/reglamento_view.dart';
@@ -86,6 +87,11 @@ GoRouter buildRouter(AuthController auth, {String inicial = '/'}) => GoRouter(
         GoRoute(
             path: '/recuperar',
             pageBuilder: (c, s) => _page(s, const RecuperarView())),
+        // Modo entrenamiento: pantalla completa, sin barras de navegación
+        GoRoute(
+          path: '/entrenar/:id',
+          pageBuilder: (c, s) => _page(s, EntrenamientoView(id: s.pathParameters['id']!)),
+        ),
         ShellRoute(
           builder: (context, state, child) =>
               AppShell(location: state.uri.path, child: child),

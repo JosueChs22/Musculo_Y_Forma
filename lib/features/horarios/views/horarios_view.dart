@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/skeleton.dart';
@@ -7,6 +6,7 @@ import '../../../core/theme.dart';
 import '../../../core/widgets.dart';
 import '../controllers/horarios_controller.dart';
 import '../models/horario_del_dia.dart';
+import '../../../core/app_shell.dart';
 
 /// RF-095: horarios de clases del gimnasio (solo lectura), por día y empezando por hoy.
 class HorariosView extends StatefulWidget {
@@ -33,22 +33,7 @@ class _HorariosViewState extends State<HorariosView> {
     final hoy = context.select<HorariosController, int>((c) => c.hoy);
 
     return SliverPage(slivers: [
-      Box(
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => context.go('/perfil'),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(44, 44),
-              foregroundColor: AppColors.cobalto,
-            ),
-            icon: const Icon(Icons.arrow_back, size: 18),
-            label: Text('Volver al perfil', style: ts(14, weight: kSemi, color: AppColors.cobalto)),
-          ),
-        ),
-        gapAfter: 8,
-      ),
+      const Box(GimnasioSecciones(actual: '/horarios')),
       const Box(
         PageTitle(eyebrow: 'Tu gimnasio', title: 'Horarios de clases', subtitle: 'Clases grupales de la semana.'),
         gapAfter: 16,

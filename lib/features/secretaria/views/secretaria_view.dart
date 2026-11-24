@@ -50,82 +50,17 @@ class _SecretariaViewState extends State<SecretariaView> {
         ),
         gapAfter: 16,
       ),
+      // Mismo control segmentado que el resto de la app; cabe en cualquier ancho
       Box(
-        Panel(
-          padding: const EdgeInsets.all(8),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth < 850) {
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _SeccionChip(
-                      label: 'Horarios',
-                      icon: Icons.schedule,
-                      selected: _seccion == _SeccionSecretaria.horarios,
-                      onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.horarios),
-                    ),
-                    _SeccionChip(
-                      label: 'Agendar cita',
-                      icon: Icons.event_available_outlined,
-                      selected: _seccion == _SeccionSecretaria.agendarCita,
-                      onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.agendarCita),
-                    ),
-                    _SeccionChip(
-                      label: 'Consultar citas',
-                      icon: Icons.event_note_outlined,
-                      selected: _seccion == _SeccionSecretaria.consultarCitas,
-                      onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.consultarCitas),
-                    ),
-                    _SeccionChip(
-                      label: 'Gestionar cliente',
-                      icon: Icons.groups_outlined,
-                      selected: _seccion == _SeccionSecretaria.gestionarCliente,
-                      onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.gestionarCliente),
-                    ),
-                  ],
-                );
-              }
-              return SegmentedButton<_SeccionSecretaria>(
-                segments: const [
-                  ButtonSegment(
-                    value: _SeccionSecretaria.horarios,
-                    label: Text('Horarios'),
-                    icon: Icon(Icons.schedule),
-                  ),
-                  ButtonSegment(
-                    value: _SeccionSecretaria.agendarCita,
-                    label: Text('Agendar cita'),
-                    icon: Icon(Icons.event_available_outlined),
-                  ),
-                  ButtonSegment(
-                    value: _SeccionSecretaria.consultarCitas,
-                    label: Text('Consultar citas'),
-                    icon: Icon(Icons.event_note_outlined),
-                  ),
-                  ButtonSegment(
-                    value: _SeccionSecretaria.gestionarCliente,
-                    label: Text('Gestionar cliente'),
-                    icon: Icon(Icons.groups_outlined),
-                  ),
-                ],
-                selected: {_seccion},
-                showSelectedIcon: false,
-                onSelectionChanged: (seleccion) =>
-                    setState(() => _seccion = seleccion.first),
-                style: SegmentedButton.styleFrom(
-                  selectedBackgroundColor: AppColors.indigo,
-                  selectedForegroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-              );
-            },
-          ),
+        SegmentedPill<_SeccionSecretaria>(
+          opciones: const [
+            (_SeccionSecretaria.horarios, 'Horarios'),
+            (_SeccionSecretaria.agendarCita, 'Agendar cita'),
+            (_SeccionSecretaria.consultarCitas, 'Consultar citas'),
+            (_SeccionSecretaria.gestionarCliente, 'Clientes'),
+          ],
+          seleccion: _seccion,
+          onCambio: (s) => setState(() => _seccion = s),
         ),
         gapAfter: 24,
       ),
@@ -166,34 +101,6 @@ enum _SeccionSecretaria {
   gestionarCliente,
   agendarCita,
   consultarCitas,
-}
-
-class _SeccionChip extends StatelessWidget {
-  const _SeccionChip({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onSelected;
-
-  @override
-  Widget build(BuildContext context) => ChoiceChip(
-        avatar: Icon(icon,
-            size: 18, color: selected ? Colors.white : AppColors.pizarra),
-        label: Text(label),
-        selected: selected,
-        showCheckmark: false,
-        onSelected: (_) => onSelected(),
-        selectedColor: AppColors.indigo,
-        side: BorderSide.none,
-        labelStyle: ts(14,
-            weight: kSemi, color: selected ? Colors.white : AppColors.ink),
-      );
 }
 
 class _Header extends StatelessWidget {

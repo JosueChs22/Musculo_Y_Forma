@@ -78,4 +78,51 @@ void main() {
     expect(find.byType(SkeletonScope), findsNothing);
   });
 
+
+  for (final ancho in [320.0, 360.0, 1280.0]) {
+    testWidgets('Navegación propia del gimnasio ($ancho px)', (tester) async {
+      tester.view.physicalSize = Size(ancho, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(AppRoot(
+        services: AppServices(
+          auth: _SesionCliente(),
+          perfil: const PerfilMockService(),
+          rutinas: const RutinasMockService(),
+          progreso: const ProgresoMockService(),
+        ),
+      ));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      // Móvil: 5 pestañas (iOS recomienda máximo 5) y "Gimnasio" agrupa las tres secciones.
+      // Escritorio: la barra lateral las muestra todas.
+      final tabs = ancho >= 1000
+          ? ['Inicio', 'Rutinas', 'Progreso', 'Horarios', 'Anuncios', 'Reglamento', 'Perfil']
+          : ['Inicio', 'Rutinas', 'Progreso', 'Gimnasio', 'Perfil'];
+      for (final tab in tabs) {
+        expect(find.text(tab), findsWidgets, reason: tab);
+      }
+      if (ancho < 1000) {
+        await tester.tap(find.text('Gimnasio'));
+        await tester.pumpAndSettle();
+        for (final seccion in ['Horarios', 'Anuncios', 'Reglamento']) {
+          expect(find.text(seccion), findsOneWidget, reason: seccion);
+        }
+        await tester.tap(find.text('Reglamento'));
+        await tester.pumpAndSettle();
+        expect(find.text('Gimnasio'), findsOneWidget); // la pestaña sigue marcada
+      }
+      expect(tester.takeException(), isNull); // sin desbordes en la barra
+
+      // En Perfil ya no hay accesos a esas pantallas
+      await tester.tap(find.text('Perfil').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Horarios de clases'), findsNothing);
+      expect(find.text('Reglamento del gimnasio'), findsNothing);
+    });
+  }
+
 }

@@ -71,14 +71,19 @@ class _EmblemPainter extends CustomPainter {
 
 /// Emblema + nombre del gimnasio.
 class BrandLockup extends StatelessWidget {
-  const BrandLockup({super.key});
+  const BrandLockup({super.key, this.compacto = false});
+
+  /// Versión de una línea para la cabecera móvil.
+  final bool compacto;
 
   @override
   Widget build(BuildContext context) => Row(children: [
-        const GmyfEmblem(size: 44),
-        const SizedBox(width: 12),
+        GmyfEmblem(size: compacto ? 32 : 44),
+        SizedBox(width: compacto ? 10 : 12),
         Flexible(
-          child: Text('MÚSCULO\nY FORMA', style: display(22, height: .95)),
+          child: compacto
+              ? Text('MÚSCULO Y FORMA', maxLines: 1, overflow: TextOverflow.ellipsis, style: display(19))
+              : Text('MÚSCULO\nY FORMA', style: display(22, height: .95)),
         ),
       ]);
 }

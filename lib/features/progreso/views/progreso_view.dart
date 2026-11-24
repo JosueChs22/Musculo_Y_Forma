@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/skeleton.dart';
@@ -77,7 +76,12 @@ class ProgresoView extends StatelessWidget {
           leftFlex: 155,
           rightFlex: 100,
           breakpoint: 900,
-          left: _ChartPanel(),
+          // El gráfico y los indicadores a la izquierda equilibran el alto del resumen
+          left: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            _ChartPanel(),
+            SizedBox(height: 20),
+            _IndicadoresPanel(),
+          ]),
           right: _InbodyPanel(),
         ),
         gapAfter: 32,
@@ -106,7 +110,6 @@ class _Header extends StatelessWidget {
       (c) => c.history.isEmpty ? '-' : c.history.first.date,
     );
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      BackLink(onTap: () => context.go('/')),
       const SizedBox(height: 4),
       Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
         const Expanded(
@@ -136,8 +139,9 @@ class _MetricSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final metrics = context.select<ProgresoController, List<BodyMetric>>((c) => c.metrics);
     final selected = context.select<ProgresoController, int>((c) => c.selectedMetric);
-    // REGLA 4: conjunto acotado (4 métricas).
-    return ResponsiveGrid(desktopCols: 4, children: [
+    // REGLA 4: conjunto acotado (4 métricas). En teléfono van 2 por fila para verlas todas sin bajar.
+    final angosto = MediaQuery.sizeOf(context).width < 520;
+    return ResponsiveGrid(desktopCols: 4, minCols: 2, spacing: angosto ? 12 : 16, children: [
       for (var i = 0; i < metrics.length; i++)
         SelectableCard(
           selected: selected == i,
@@ -149,7 +153,7 @@ class _MetricSelector extends StatelessWidget {
             const SizedBox(height: 8),
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text(metrics[i].valueLabel,
-                  style: display(40, color: selected == i ? Colors.white : AppColors.ink)),
+                  style: display(angosto ? 32 : 40, color: selected == i ? Colors.white : AppColors.ink)),
               const SizedBox(width: 6),
               Padding(
                 padding: const EdgeInsets.only(bottom: 5),
@@ -319,26 +323,36 @@ class _InbodyPanel extends StatelessWidget {
               MiniBar(value: item.ratio),
             ]),
           ),
-        Container(
-          padding: const EdgeInsets.only(top: 18),
-          decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.line))),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Eyebrow('Indicadores adicionales'),
-            const SizedBox(height: 14),
-            ResponsiveGrid(desktopCols: 2, spacing: 12, children: [
-              for (final extra in inbody.extras)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: AppColors.niebla, borderRadius: BorderRadius.circular(12)),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(extra.label, style: ts(13, color: AppColors.pizarra)),
-                    const SizedBox(height: 2),
-                    Text(extra.value, style: ts(16, weight: kSemi)),
-                  ]),
-                ),
-            ]),
-          ]),
-        ),
+      ]),
+    );
+  }
+}
+
+/// Indicadores adicionales de la composición corporal (dos por fila).
+class _IndicadoresPanel extends StatelessWidget {
+  const _IndicadoresPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    final inbody = context.select<ProgresoController, InbodySummary>((c) => c.inbody);
+    if (inbody.extras.isEmpty) return const SizedBox.shrink();
+    return Panel(
+      padding: const EdgeInsets.all(24),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Eyebrow('Indicadores adicionales'),
+        const SizedBox(height: 14),
+        ResponsiveGrid(desktopCols: 4, minCols: 2, spacing: 12, children: [
+          for (final extra in inbody.extras)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: AppColors.niebla, borderRadius: BorderRadius.circular(12)),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(extra.label, style: ts(13, color: AppColors.pizarra)),
+                const SizedBox(height: 2),
+                Text(extra.value, style: ts(16, weight: kSemi)),
+              ]),
+            ),
+        ]),
       ]),
     );
   }

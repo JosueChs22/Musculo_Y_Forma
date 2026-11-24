@@ -1,0 +1,30 @@
+# App web de Músculo y Forma en Render como sitio estático (plan gratuito).
+# Usa la API ya desplegada aparte (GYM-API): https://musculo-y-forma.onrender.com/api
+services:
+  - type: web
+    runtime: static
+    name: gmyf-app
+    branch: feature/avance-3-mediciones
+    # Render no trae Flutter: se descarga la misma versión que usa el equipo y se compila la web
+    buildCommand: >-
+      git clone https://github.com/flutter/flutter.git --depth 1 -b 3.47.6 "$HOME/flutter" &&
+      export PATH="$HOME/flutter/bin:$PATH" &&
+      flutter config --no-analytics --enable-web &&
+      flutter pub get &&
+      flutter build web --release
+    staticPublishPath: build/web
+    # La app usa rutas con "#", pero si alguien abre una ruta directa se sirve la app igual
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin

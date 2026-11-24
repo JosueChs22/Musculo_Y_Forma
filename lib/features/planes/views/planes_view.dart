@@ -129,7 +129,7 @@ class _PlanesViewState extends State<PlanesView> {
         ))
       else ...[
         // REGLA 4: lista virtualizada
-        SliverList.builder(
+        SliverRejilla(
           itemCount: items.length,
           itemBuilder: (context, i) {
             // Scroll infinito: al pintar el último plan se pide la página siguiente.
@@ -138,10 +138,7 @@ class _PlanesViewState extends State<PlanesView> {
                 if (context.mounted) _cargarMas(context);
               });
             }
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _PlanTile(items[i]),
-            );
+            return _PlanTile(items[i]);
           },
         ),
         if (c.cargandoMas)

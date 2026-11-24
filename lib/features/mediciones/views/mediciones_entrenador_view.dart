@@ -181,7 +181,15 @@ class _MedicionesEntrenadorViewState extends State<MedicionesEntrenadorView> {
           leading: Icon(icono, color: AppColors.cobalto),
           title: Text(titulo, style: ts(15, weight: kSemi)),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: contenido,
+          // Campos en cuadrícula: 1 por fila en teléfono, hasta 3 en escritorio.
+          // Los espaciadores de la lista se descartan: la cuadrícula ya separa.
+          children: [
+            ResponsiveGrid(
+              desktopCols: 3,
+              spacing: 12,
+              children: [for (final w in contenido) if (w is! SizedBox) w],
+            ),
+          ],
         ),
       );
 

@@ -345,18 +345,19 @@ class _ConsultarCitasSectionState extends State<ConsultarCitasSection> {
                   style: ts(17, weight: kSemi),
                 ),
               ),
-              for (final cita in grupo) ...[
-                _CitaConsultaCard(
-                  cita: cita,
-                  onTap: _cargando || _cambiandoEstado
-                      ? null
-                      : () => _editarCita(cita),
-                  onCambiarEstado: _cargando || _cambiandoEstado
-                      ? null
-                      : () => _cambiarEstado(cita),
-                ),
-                const SizedBox(height: 10),
-              ],
+              // Citas en cuadrícula: hasta 3 por fila en escritorio
+              ResponsiveGrid(desktopCols: 3, spacing: 10, children: [
+                for (final cita in grupo)
+                  _CitaConsultaCard(
+                    cita: cita,
+                    onTap: _cargando || _cambiandoEstado
+                        ? null
+                        : () => _editarCita(cita),
+                    onCambiarEstado: _cargando || _cambiandoEstado
+                        ? null
+                        : () => _cambiarEstado(cita),
+                  ),
+              ]),
               const SizedBox(height: 14),
             ],
           ],

@@ -136,12 +136,9 @@ class _EjerciciosViewState extends State<EjerciciosView> {
         ))
       else ...[
         // REGLA 4: lista virtualizada
-        SliverList.builder(
+        SliverRejilla(
           itemCount: items.length,
-          itemBuilder: (context, i) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _EjercicioTile(items[i]),
-          ),
+          itemBuilder: (context, i) => _EjercicioTile(items[i]),
         ),
         if (c.cargandoMas)
           const Box(SkeletonScope(child: Panel(child: SkeletonRow())))

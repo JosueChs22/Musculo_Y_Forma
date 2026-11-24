@@ -23,8 +23,7 @@ class EvolucionMedicionesView extends StatefulWidget {
   final MedicionesService service;
 
   @override
-  State<EvolucionMedicionesView> createState() =>
-      _EvolucionMedicionesViewState();
+  State<EvolucionMedicionesView> createState() => _EvolucionMedicionesViewState();
 }
 
 class _EvolucionMedicionesViewState extends State<EvolucionMedicionesView> {
@@ -49,8 +48,7 @@ class _EvolucionMedicionesViewState extends State<EvolucionMedicionesView> {
     _cargar();
   }
 
-  List<MedicionCliente> get _cronologicas =>
-      filtrarPeriodo(_mediciones ?? [], null, null);
+  List<MedicionCliente> get _cronologicas => filtrarPeriodo(_mediciones ?? [], null, null);
 
   DateTime _dentroDeLimites(DateTime fecha, DateTime primera, DateTime ultima) {
     if (fecha.isBefore(primera)) return primera;
@@ -65,8 +63,7 @@ class _EvolucionMedicionesViewState extends State<EvolucionMedicionesView> {
       _error = null;
     });
     try {
-      final mediciones =
-          await cargarHistorialCompleto(widget.service, widget.cliente.id);
+      final mediciones = await cargarHistorialCompleto(widget.service, widget.cliente.id);
       if (!mounted) return;
       setState(() {
         _mediciones = mediciones;
@@ -103,15 +100,9 @@ class _EvolucionMedicionesViewState extends State<EvolucionMedicionesView> {
       '3 meses' => restarMeses(hoy, 3),
       '6 meses' => restarMeses(hoy, 6),
       '1 año' => restarMeses(hoy, 12),
-      _ => cronologicas.isEmpty
-          ? null
-          : inicioDia(cronologicas.first.fecha.toLocal()),
+      _ => cronologicas.isEmpty ? null : inicioDia(cronologicas.first.fecha.toLocal()),
     };
-    _hasta = periodo == 'Todo'
-        ? (cronologicas.isEmpty
-            ? null
-            : inicioDia(cronologicas.last.fecha.toLocal()))
-        : hoy;
+    _hasta = periodo == 'Todo' ? (cronologicas.isEmpty ? null : inicioDia(cronologicas.last.fecha.toLocal())) : hoy;
   }
 
   Future<void> _elegirFecha({required bool desde}) async {
@@ -126,12 +117,10 @@ class _EvolucionMedicionesViewState extends State<EvolucionMedicionesView> {
       initialDate: desde ? inicio : fin,
       firstDate: primera,
       lastDate: ultima,
-      helpText:
-          desde ? 'Selecciona la fecha desde' : 'Selecciona la fecha hasta',
+      helpText: desde ? 'Selecciona la fecha desde' : 'Selecciona la fecha hasta',
     );
     if (elegida == null || !mounted) return;
-    if ((desde && elegida.isAfter(fin)) ||
-        (!desde && elegida.isBefore(inicio))) {
+    if ((desde && elegida.isAfter(fin)) || (!desde && elegida.isBefore(inicio))) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Desde no puede ser posterior a Hasta.')),
       );
@@ -197,15 +186,10 @@ class _EvolucionMedicionesViewState extends State<EvolucionMedicionesView> {
                         resumen.indicador.unidad,
                       ))),
                       DataCell(Text(_valor(
-                        resumen.cantidadValores < 2
-                            ? null
-                            : resumen.comparacion.diferenciaAbsoluta,
-                        resumen.indicador.unidad == '%'
-                            ? 'p.p.'
-                            : resumen.indicador.unidad,
+                        resumen.cantidadValores < 2 ? null : resumen.comparacion.diferenciaAbsoluta,
+                        resumen.indicador.unidad == '%' ? 'p.p.' : resumen.indicador.unidad,
                       ))),
-                      DataCell(Text(resumen.cantidadValores < 2 ||
-                              resumen.comparacion.variacionPorcentual == null
+                      DataCell(Text(resumen.cantidadValores < 2 || resumen.comparacion.variacionPorcentual == null
                           ? '—'
                           : '${resumen.comparacion.variacionPorcentual! >= 0 ? '+' : ''}'
                               '${resumen.comparacion.variacionPorcentual!.toStringAsFixed(2)} %')),
@@ -243,19 +227,13 @@ class _EvolucionMedicionesViewState extends State<EvolucionMedicionesView> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(widget.cliente.nombre, style: ts(18, weight: kSemi)),
-                Text('Carné ${widget.cliente.usuario}',
-                    style: ts(14, color: AppColors.pizarra)),
+                Text('Carné ${widget.cliente.usuario}', style: ts(14, color: AppColors.pizarra)),
                 const SizedBox(height: 12),
                 Text('Período', style: ts(15, weight: kSemi)),
                 Wrap(
                   spacing: 8,
                   children: [
-                    for (final opcion in [
-                      '3 meses',
-                      '6 meses',
-                      '1 año',
-                      'Todo'
-                    ])
+                    for (final opcion in ['3 meses', '6 meses', '1 año', 'Todo'])
                       ChoiceChip(
                         label: Text(opcion),
                         selected: _periodo == opcion,
@@ -268,17 +246,13 @@ class _EvolucionMedicionesViewState extends State<EvolucionMedicionesView> {
                   runSpacing: 8,
                   children: [
                     OutlinedButton.icon(
-                      onPressed: hayMediciones
-                          ? () => _elegirFecha(desde: true)
-                          : null,
+                      onPressed: hayMediciones ? () => _elegirFecha(desde: true) : null,
                       icon: const Icon(Icons.calendar_today_outlined),
                       label: Text(
                           'Desde: ${!hayMediciones || _desde == null ? 'Sin mediciones' : fechaCitaLabel(_desde!)}'),
                     ),
                     OutlinedButton.icon(
-                      onPressed: hayMediciones
-                          ? () => _elegirFecha(desde: false)
-                          : null,
+                      onPressed: hayMediciones ? () => _elegirFecha(desde: false) : null,
                       icon: const Icon(Icons.calendar_today_outlined),
                       label: Text(
                           'Hasta: ${!hayMediciones || _hasta == null ? 'Sin mediciones' : fechaCitaLabel(_hasta!)}'),
@@ -307,64 +281,66 @@ class _EvolucionMedicionesViewState extends State<EvolucionMedicionesView> {
             ),
             gapAfter: 16,
           ),
-        if (mediciones == null && _cargando)
-          const Box(Center(child: CircularProgressIndicator()), gapAfter: 16),
+        if (mediciones == null && _cargando) const Box(Center(child: CircularProgressIndicator()), gapAfter: 16),
         if (mediciones != null) ...[
+          // Escritorio: gráfico y tabla lado a lado; móvil: apilados
           Box(
-            Panel(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('Historial gráfico', style: ts(18, weight: kSemi)),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _categoria,
-                    decoration: const InputDecoration(labelText: 'Categoría'),
-                    items: [
-                      for (final categoria in _categorias.keys)
-                        DropdownMenuItem(
-                            value: categoria, child: Text(categoria)),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) setState(() => _categoria = value);
-                    },
-                  ),
-                  if (_categoria == 'Composición corporal') ...[
+            Columnas(
+              flexIzquierda: 1,
+              flexDerecha: 1,
+              desde: 1000,
+              izquierda: Panel(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('Historial gráfico', style: ts(18, weight: kSemi)),
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
-                      initialValue: _composicion,
-                      decoration: const InputDecoration(labelText: 'Indicador'),
+                      initialValue: _categoria,
+                      decoration: const InputDecoration(labelText: 'Categoría'),
                       items: [
-                        for (final indicador in composicionCorporal)
-                          DropdownMenuItem(
-                            value: indicador.nombre,
-                            child: Text(indicador.nombre),
-                          ),
+                        for (final categoria in _categorias.keys)
+                          DropdownMenuItem(value: categoria, child: Text(categoria)),
                       ],
                       onChanged: (value) {
-                        if (value != null) setState(() => _composicion = value);
+                        if (value != null) setState(() => _categoria = value);
                       },
                     ),
+                    if (_categoria == 'Composición corporal') ...[
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: _composicion,
+                        decoration: const InputDecoration(labelText: 'Indicador'),
+                        items: [
+                          for (final indicador in composicionCorporal)
+                            DropdownMenuItem(
+                              value: indicador.nombre,
+                              child: Text(indicador.nombre),
+                            ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) setState(() => _composicion = value);
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Text('${periodo.length} evaluaciones en el período', style: ts(13, color: AppColors.pizarra)),
+                    const SizedBox(height: 12),
+                    if (periodo.isEmpty)
+                      Text('No hay mediciones activas en este período.', style: ts(14, color: AppColors.pizarra))
+                    else
+                      GraficoEvolucion(
+                        key: ValueKey('$_categoria-$_composicion'),
+                        mediciones: periodo,
+                        indicadores: indicadores,
+                      ),
                   ],
-                  const SizedBox(height: 12),
-                  Text('${periodo.length} evaluaciones en el período',
-                      style: ts(13, color: AppColors.pizarra)),
-                  const SizedBox(height: 12),
-                  if (periodo.isEmpty)
-                    Text('No hay mediciones activas en este período.',
-                        style: ts(14, color: AppColors.pizarra))
-                  else
-                    GraficoEvolucion(
-                      key: ValueKey('$_categoria-$_composicion'),
-                      mediciones: periodo,
-                      indicadores: indicadores,
-                    ),
-                ],
+                ),
               ),
+              derecha: _tabla(periodo),
             ),
             gapAfter: 16,
           ),
-          Box(_tabla(periodo), gapAfter: 16),
         ],
       ]),
     );

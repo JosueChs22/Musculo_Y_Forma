@@ -11,7 +11,6 @@ import '../controllers/rutinas_controller.dart';
 import '../models/exercise.dart';
 import '../models/routine.dart';
 import 'widgets/ejercicio_detalle.dart';
-import 'widgets/workout_dialog.dart';
 
 class RutinasView extends StatelessWidget {
   const RutinasView({super.key});
@@ -61,14 +60,30 @@ class RutinasView extends StatelessWidget {
       const Box(_Tabs(), gapAfter: 24),
       const Box(_RoutinePicker(), gapAfter: 24),
       Box(_DetailHeader(routine: routine), gapAfter: 12),
-      // REGLA 4: lista virtualizada de ejercicios.
-      SliverList.builder(
-        itemCount: routine.exercises.length,
-        itemBuilder: (context, i) => Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _ExerciseTile(index: i, exercise: routine.exercises[i]),
-        ),
-      ),
+      // REGLA 4: lista virtualizada. En pantallas anchas los ejercicios van en
+      // 2 o 3 columnas para ver la rutina completa sin tanto desplazamiento.
+      SliverLayoutBuilder(builder: (context, caja) {
+        final ancho = caja.crossAxisExtent;
+        final cols = ancho >= 1100 ? 3 : (ancho >= 700 ? 2 : 1);
+        final ejercicios = routine.exercises;
+        final filas = (ejercicios.length / cols).ceil();
+        return SliverList.builder(
+          itemCount: filas,
+          itemBuilder: (context, f) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              for (var k = 0; k < cols; k++) ...[
+                if (k > 0) const SizedBox(width: 12),
+                Expanded(
+                  child: f * cols + k < ejercicios.length
+                      ? _ExerciseTile(index: f * cols + k, exercise: ejercicios[f * cols + k])
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ]),
+          ),
+        );
+      }),
     ]);
   }
 }
@@ -80,24 +95,10 @@ class _Tabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tab = context.select<RutinasController, RutinasTab>((c) => c.tab);
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SegmentedButton<RutinasTab>(
-        showSelectedIcon: false,
-        segments: [
-          for (final t in RutinasTab.values)
-            ButtonSegment(value: t, label: Text(t.etiqueta, style: ts(14, weight: kSemi))),
-        ],
-        selected: {tab},
-        onSelectionChanged: (s) => context.read<RutinasController>().setTab(s.first),
-        style: ButtonStyle(
-          backgroundColor: WidgetStateProperty.resolveWith(
-              (st) => st.contains(WidgetState.selected) ? AppColors.indigo : AppColors.card),
-          foregroundColor:
-              WidgetStateProperty.resolveWith((st) => st.contains(WidgetState.selected) ? Colors.white : AppColors.ink),
-          side: const WidgetStatePropertyAll(BorderSide(color: AppColors.line)),
-        ),
-      ),
+    return SegmentedPill<RutinasTab>(
+      opciones: [for (final t in RutinasTab.values) (t, t.etiqueta)],
+      seleccion: tab,
+      onCambio: (t) => context.read<RutinasController>().setTab(t),
     );
   }
 }
@@ -224,7 +225,6 @@ class _Header extends StatelessWidget {
     final count = context.select<RutinasController, int>((c) => c.routines.length);
     final wide = MediaQuery.sizeOf(context).width >= 640;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      BackLink(onTap: () => context.go('/')),
       const SizedBox(height: 4),
       Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
         Expanded(
@@ -337,7 +337,7 @@ class _DetailHeader extends StatelessWidget {
           PrimaryButton(
             label: 'Comenzar rutina',
             icon: Icons.play_arrow_rounded,
-            onPressed: () => showWorkoutDialog(context, routine.title),
+            onPressed: () => context.go('/entrenar/${routine.id}'),
           ),
         ],
       ),
