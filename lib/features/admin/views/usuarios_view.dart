@@ -116,12 +116,9 @@ class _UsuariosViewState extends State<UsuariosView> {
           ),
         ))
       else
-        SliverList.builder(
+        SliverRejilla(
           itemCount: visibles.length,
-          itemBuilder: (context, i) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _UsuarioTile(visibles[i]),
-          ),
+          itemBuilder: (context, i) => _UsuarioTile(visibles[i]),
         ),
     ]);
   }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/fechas.dart';
@@ -9,6 +8,7 @@ import '../../../core/widgets.dart';
 import '../../secretaria/models/anuncio.dart';
 import '../../secretaria/utils/imagen_anuncio.dart';
 import '../controllers/anuncios_cliente_controller.dart';
+import '../../../core/app_shell.dart';
 
 /// RF-092: anuncios activos del gimnasio (título, contenido, fecha de publicación e imagen).
 class AnunciosClienteView extends StatefulWidget {
@@ -33,22 +33,7 @@ class _AnunciosClienteViewState extends State<AnunciosClienteView> {
     final lista = c.anuncios;
 
     return SliverPage(slivers: [
-      Box(
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => context.go('/perfil'),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(44, 44),
-              foregroundColor: AppColors.cobalto,
-            ),
-            icon: const Icon(Icons.arrow_back, size: 18),
-            label: Text('Volver al perfil', style: ts(14, weight: kSemi, color: AppColors.cobalto)),
-          ),
-        ),
-        gapAfter: 8,
-      ),
+      const Box(GimnasioSecciones(actual: '/anuncios')),
       const Box(
         PageTitle(eyebrow: 'Tu gimnasio', title: 'Anuncios', subtitle: 'Novedades y promociones vigentes.'),
         gapAfter: 16,

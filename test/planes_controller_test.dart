@@ -17,7 +17,7 @@ Ejercicio _ej(String id) => Ejercicio(id: id, nombre: 'Ejercicio $id', grupoMusc
 
 /// Servicio en memoria que anota lo que se le pide.
 class _ServicioFalso implements PlanesService {
-  final consultas = <({String? texto, CategoriaPlan? categoria, bool soloActivos, String? cursor})>[];
+  final consultas = <({String? texto, CategoriaPlan? categoria, bool soloActivos, bool? asignado, String? cursor})>[];
   final busquedasClientes = <String?>[];
   final llamadas = <String>[];
   bool fallar = false;
@@ -32,8 +32,8 @@ class _ServicioFalso implements PlanesService {
   );
 
   @override
-  Future<PaginaPlanes> listar({CategoriaPlan? categoria, String? texto, bool soloActivos = true, String? cursor}) async {
-    consultas.add((texto: texto, categoria: categoria, soloActivos: soloActivos, cursor: cursor));
+  Future<PaginaPlanes> listar({CategoriaPlan? categoria, String? texto, bool soloActivos = true, bool? asignado, String? cursor}) async {
+    consultas.add((texto: texto, categoria: categoria, soloActivos: soloActivos, asignado: asignado, cursor: cursor));
     if (cursor != null) return PaginaPlanes([_plan('3')], null);
     return PaginaPlanes([_plan('1', cat: categoria ?? CategoriaPlan.entrenamiento), _plan('2')], 'pag2');
   }
@@ -118,6 +118,20 @@ void main() {
       await c.load();
       expect(servicio.consultas.last.categoria, CategoriaPlan.calentamiento);
       expect(c.hayFiltros, isTrue);
+    });
+
+    test('filtrar por asignación se combina con categoría y búsqueda', () async {
+      c.filtrarCategoria(CategoriaPlan.estiramiento);
+      c.filtrarAsignacion(false);
+      await c.load();
+      final ultima = servicio.consultas.last;
+      expect(ultima.asignado, isFalse);
+      expect(ultima.categoria, CategoriaPlan.estiramiento);
+      expect(c.asignadoFiltro, isFalse);
+      expect(c.hayFiltros, isTrue);
+      c.filtrarAsignacion(null);
+      await c.load();
+      expect(servicio.consultas.last.asignado, isNull);
     });
 
     test('asignar actualiza el plan y deja el usuario asignado', () async {

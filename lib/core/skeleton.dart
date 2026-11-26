@@ -22,7 +22,19 @@ class _SkeletonScopeState extends State<SkeletonScope> with SingleTickerProvider
     duration: const Duration(milliseconds: 900),
     lowerBound: .45,
     upperBound: 1,
-  )..repeat(reverse: true);
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // WCAG 2.3.3: sin pulso cuando el sistema pide reducir movimiento
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _c.stop();
+      _c.value = .7;
+    } else if (!_c.isAnimating) {
+      _c.repeat(reverse: true);
+    }
+  }
 
   @override
   void dispose() {

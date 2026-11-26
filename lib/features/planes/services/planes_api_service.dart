@@ -13,6 +13,7 @@ class PlanesApiService implements PlanesService {
     CategoriaPlan? categoria,
     String? texto,
     bool soloActivos = true,
+    bool? asignado,
     String? cursor,
   }) async {
     final json = await _http.get('/rutinas', query: {
@@ -20,6 +21,7 @@ class PlanesApiService implements PlanesService {
       if (categoria != null) 'categoria': categoria.valor,
       if (texto != null && texto.isNotEmpty) 'q': texto,
       if (soloActivos) 'estado': 'Activo',
+      if (asignado != null) 'asignado': '$asignado',
       if (cursor != null) 'cursor': cursor,
     });
     return PaginaPlanes(

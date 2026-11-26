@@ -48,6 +48,7 @@ class _PressableState extends State<Pressable> {
     final radio = BorderRadius.circular(widget.radius);
 
     return Semantics(
+      container: true,
       button: true,
       enabled: activo,
       selected: widget.selected,
@@ -85,7 +86,8 @@ class _PressableState extends State<Pressable> {
                         : Colors.transparent,
                 border: _focus ? Border.all(color: AppColors.cobalto, width: 2) : null,
               ),
-              child: widget.child,
+              // Con etiqueta propia, el contenido no se lee dos veces
+              child: widget.semanticLabel != null ? ExcludeSemantics(child: widget.child) : widget.child,
             ),
           ),
         ),
@@ -234,7 +236,7 @@ class MiniBar extends StatelessWidget {
         // La barra crece hasta su valor en vez de aparecer de golpe
         child: TweenAnimationBuilder<double>(
           tween: Tween(begin: 0, end: value.clamp(0.0, 1.0)),
-          duration: const Duration(milliseconds: 600),
+          duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 600),
           curve: kCurve,
           builder: (context, v, _) => FractionallySizedBox(
             widthFactor: v,
@@ -404,8 +406,9 @@ class PageTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final big = MediaQuery.sizeOf(context).width >= 640;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (eyebrow != null) ...[Eyebrow(eyebrow!), const SizedBox(height: 6)],
-      Text(title.toUpperCase(), style: display(big ? 48 : 38)),
+      if (eyebrow != null) ...[Eyebrow(eyebrow!), SizedBox(height: big ? 6 : 4)],
+      // En móvil el título es más compacto para dejar más espacio al contenido
+      Text(title.toUpperCase(), style: display(big ? 48 : 32)),
       if (subtitle != null) ...[
         const SizedBox(height: 6),
         Text(subtitle!, style: ts(15, color: AppColors.pizarra)),
@@ -519,9 +522,12 @@ class TwoCol extends StatelessWidget {
 /// Grilla responsiva para conjuntos ACOTADOS (métricas, días de la semana).
 /// Para listas que pueden crecer usar SliverList / ListView.builder (REGLA 4).
 class ResponsiveGrid extends StatelessWidget {
-  const ResponsiveGrid({super.key, required this.children, this.desktopCols = 3, this.spacing = 16});
+  const ResponsiveGrid({super.key, required this.children, this.desktopCols = 3, this.spacing = 16, this.minCols = 1});
   final List<Widget> children;
   final int desktopCols;
+
+  /// Columnas mínimas aunque el espacio sea angosto (datos cortos, como pares etiqueta-valor).
+  final int minCols;
   final double spacing;
 
   @override
@@ -533,7 +539,8 @@ class ResponsiveGrid extends StatelessWidget {
           : width >= 520
               ? math.min(2, desktopCols)
               : 1;
-      final itemW = (width - spacing * (cols - 1)) / cols;
+      final cols2 = math.max(cols, minCols);
+      final itemW = (width - spacing * (cols2 - 1)) / cols2;
       return Wrap(
         spacing: spacing,
         runSpacing: spacing,
@@ -554,9 +561,172 @@ class ErrorPanel extends StatelessWidget {
         child: Row(children: [
           const Icon(Icons.error_outline, color: AppColors.danger),
           const SizedBox(width: 12),
-          Expanded(child: Text(message, style: ts(14, color: AppColors.ink))),
+          // Nodo propio y se anuncia al aparecer (WCAG 4.1.3)
+          Expanded(
+            child: Semantics(
+              container: true,
+              liveRegion: true,
+              child: Text(message, style: ts(14, color: AppColors.ink)),
+            ),
+          ),
           const SizedBox(width: 12),
           SecondaryButton(label: 'Reintentar', onPressed: onRetry),
         ]),
       );
+}
+
+/// Control segmentado al estilo iOS: un riel suave y una "píldora" blanca que se
+/// desliza a la opción elegida. Cada segmento ocupa un ancho proporcional a su
+/// texto (todos con el mismo tamaño de letra); si aun así no cabe, el conjunto
+/// se reduce de forma pareja, así nunca se corta en pantallas angostas.
+class SegmentedPill<T> extends StatelessWidget {
+  const SegmentedPill({super.key, required this.opciones, required this.seleccion, required this.onCambio});
+
+  final List<(T, String)> opciones;
+  final T seleccion;
+  final ValueChanged<T> onCambio;
+
+  static const _alto = 40.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final i = math.max(0, opciones.indexWhere((o) => o.$1 == seleccion));
+    final quieto = MediaQuery.disableAnimationsOf(context);
+    // Peso de cada segmento: largo del texto más un margen fijo
+    final pesos = [for (final o in opciones) o.$2.length + 6.0];
+    final total = pesos.fold<double>(0, (a, b) => a + b);
+
+    return Container(
+      height: _alto,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(color: AppColors.track, borderRadius: BorderRadius.circular(_alto / 2)),
+      child: LayoutBuilder(builder: (context, c) {
+        final ancho = c.maxWidth;
+        final izq = pesos.take(i).fold<double>(0, (a, b) => a + b) / total * ancho;
+        // Tamaño de letra común: el que permite que el segmento más exigente quepa
+        final escala = math.min(1.0, ancho / (total * 8.2));
+        final letra = (14 * escala).clamp(11.0, 14.0);
+        return Stack(children: [
+          AnimatedPositioned(
+            duration: quieto ? Duration.zero : kMedium,
+            curve: kCurve,
+            left: izq,
+            width: pesos[i] / total * ancho,
+            top: 0,
+            bottom: 0,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: AppColors.card,
+                borderRadius: BorderRadius.circular(_alto / 2),
+                boxShadow: const [BoxShadow(color: Color(0x1F23246B), blurRadius: 6, offset: Offset(0, 2))],
+              ),
+            ),
+          ),
+          Row(children: [
+            for (var k = 0; k < opciones.length; k++)
+              Expanded(
+                flex: (pesos[k] * 10).round(),
+                child: Pressable(
+                  onTap: () => onCambio(opciones[k].$1),
+                  radius: _alto / 2,
+                  selected: k == i,
+                  semanticLabel: opciones[k].$2,
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        opciones[k].$2,
+                        maxLines: 1,
+                        style: ts(letra, weight: k == i ? kSemi : kRegular, color: k == i ? AppColors.indigo : AppColors.pizarra),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ]),
+        ]);
+      }),
+    );
+  }
+}
+
+/// Dos bloques lado a lado cuando hay espacio (900 px o más) y apilados en
+/// pantallas angostas. Así en escritorio la información relacionada se ve
+/// completa sin tener que bajar, y en móvil sigue el orden natural de lectura.
+class Columnas extends StatelessWidget {
+  const Columnas({
+    super.key,
+    required this.izquierda,
+    required this.derecha,
+    this.flexIzquierda = 3,
+    this.flexDerecha = 2,
+    this.desde = 900,
+    this.espacio = 20,
+  });
+
+  final Widget izquierda;
+  final Widget derecha;
+  final int flexIzquierda;
+  final int flexDerecha;
+  final double desde;
+  final double espacio;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, caja) {
+        if (caja.maxWidth < desde) {
+          return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            izquierda,
+            SizedBox(height: espacio),
+            derecha,
+          ]);
+        }
+        return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(flex: flexIzquierda, child: izquierda),
+          SizedBox(width: espacio),
+          Expanded(flex: flexDerecha, child: derecha),
+        ]);
+      });
+}
+
+/// Lista de tarjetas que se reparte en columnas según el ancho disponible:
+/// una en teléfono y hasta [maxColumnas] en escritorio (cada columna de al
+/// menos [anchoMinimo] px). Sigue siendo virtualizada (REGLA 4): solo se
+/// construyen las filas visibles. Las tarjetas de una fila se alinean arriba.
+class SliverRejilla extends StatelessWidget {
+  const SliverRejilla({
+    super.key,
+    required this.itemCount,
+    required this.itemBuilder,
+    this.anchoMinimo = 360,
+    this.maxColumnas = 3,
+    this.espacio = 12,
+  });
+
+  final int itemCount;
+  final Widget Function(BuildContext context, int index) itemBuilder;
+  final double anchoMinimo;
+  final int maxColumnas;
+  final double espacio;
+
+  @override
+  Widget build(BuildContext context) => SliverLayoutBuilder(builder: (context, caja) {
+        final cols = ((caja.crossAxisExtent + espacio) / (anchoMinimo + espacio)).floor().clamp(1, maxColumnas);
+        final filas = (itemCount / cols).ceil();
+        return SliverList.builder(
+          itemCount: filas,
+          itemBuilder: (context, f) => Padding(
+            padding: EdgeInsets.only(bottom: espacio),
+            child: cols == 1
+                ? itemBuilder(context, f)
+                : Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    for (var k = 0; k < cols; k++) ...[
+                      if (k > 0) SizedBox(width: espacio),
+                      Expanded(
+                        child: f * cols + k < itemCount ? itemBuilder(context, f * cols + k) : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ]),
+          ),
+        );
+      });
 }

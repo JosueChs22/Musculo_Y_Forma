@@ -50,7 +50,7 @@ class UsuariosApiService implements UsuariosService {
     if (res.statusCode >= 400) {
       // La API responde {error: '...'} o, si falla la validación, {errors: [...]}
       throw ApiException(
-        json['error'] as String? ??
+        (json['error'] is String ? json['error'] as String : null) ??
             (json['errors'] != null
                 ? 'Revisa los datos ingresados.'
                 : 'Error ${res.statusCode}'),

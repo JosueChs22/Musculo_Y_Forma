@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/fechas.dart';
@@ -8,6 +7,7 @@ import '../../../core/theme.dart';
 import '../../../core/widgets.dart';
 import '../../admin/models/reglamento.dart';
 import '../controllers/reglamento_controller.dart';
+import '../../../core/app_shell.dart';
 
 /// RF-093: reglamento del gimnasio, solo lectura, disponible en cualquier momento.
 class ReglamentoView extends StatefulWidget {
@@ -32,22 +32,7 @@ class _ReglamentoViewState extends State<ReglamentoView> {
     final lista = c.reglamentos;
 
     return SliverPage(slivers: [
-      Box(
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () => context.go('/perfil'),
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(44, 44),
-              foregroundColor: AppColors.cobalto,
-            ),
-            icon: const Icon(Icons.arrow_back, size: 18),
-            label: Text('Volver al perfil', style: ts(14, weight: kSemi, color: AppColors.cobalto)),
-          ),
-        ),
-        gapAfter: 8,
-      ),
+      const Box(GimnasioSecciones(actual: '/reglamento')),
       const Box(
         PageTitle(eyebrow: 'Tu gimnasio', title: 'Reglamento', subtitle: 'Las normas que todos cumplimos.'),
         gapAfter: 16,

@@ -266,7 +266,7 @@ class _HistorialMedicionesViewState extends State<HistorialMedicionesView> {
       );
 
   Widget _tarjeta(MedicionCliente medicion, int indice) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.zero, // el espacio entre tarjetas lo pone SliverRejilla
         child: Panel(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -539,11 +539,11 @@ class _HistorialMedicionesViewState extends State<HistorialMedicionesView> {
             gapAfter: 12,
           ),
         if (_mediciones.isNotEmpty)
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) => _tarjeta(_mediciones[index], index),
-              childCount: _mediciones.length,
-            ),
+          SliverRejilla(
+            itemCount: _mediciones.length,
+            anchoMinimo: 420,
+            maxColumnas: 2,
+            itemBuilder: (context, index) => _tarjeta(_mediciones[index], index),
           ),
         if (_nextCursor != null)
           Box(

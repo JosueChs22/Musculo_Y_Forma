@@ -36,6 +36,8 @@ List<PanelRol> panelesDe(RolUsuario? rol) => [
 
 /// ¿Puede [rol] abrir [ruta]? Las rutas que no son de un panel son de todos.
 bool puedeEntrar(RolUsuario? rol, String ruta) {
+  // Normaliza mayúsculas y barras finales/dobles para que /Coach/ o //admin no salten el filtro
+  ruta = '/${ruta.toLowerCase().split('/').where((s) => s.isNotEmpty).join('/')}';
   if (ruta == '/coach/mediciones' || ruta.startsWith('/coach/mediciones/')) {
     return rol == RolUsuario.entrenador;
   }

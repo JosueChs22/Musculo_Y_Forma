@@ -10,6 +10,8 @@ import '../../../core/widgets.dart';
 import '../../auth/controllers/auth_controller.dart';
 import '../../auth/models/usuario.dart';
 import '../../auth/views/widgets/cambiar_contrasena_dialog.dart';
+import '../../legal/controllers/consentimiento_controller.dart';
+import '../../legal/views/widgets/privacidad_panel.dart';
 import '../controllers/perfil_controller.dart';
 import '../models/user_profile.dart';
 
@@ -24,29 +26,48 @@ class PerfilView extends StatelessWidget {
 
     return SliverPage(slivers: [
       const Box(PageTitle(eyebrow: 'Tu cuenta', title: 'Perfil'), gapAfter: 24),
-      Box(_Cuenta(usuario), gapAfter: 16),
-      Box(_Entrenamiento(esCliente: usuario.rol == RolUsuario.cliente), gapAfter: 16),
-      // Consultas del gimnasio, para todo usuario con sesión (RF-092, RF-093)
-      Box(
-        SecondaryButton(label: 'Anuncios', icon: Icons.campaign_outlined, onPressed: () => context.go('/anuncios')),
-        gapAfter: 12,
-      ),
-      Box(
-        SecondaryButton(
-          label: 'Reglamento del gimnasio',
-          icon: Icons.gavel_outlined,
-          onPressed: () => context.go('/reglamento'),
-        ),
-        gapAfter: 24,
-      ),
-      // Paneles de trabajo del rol (en móvil se entra a ellos desde aquí)
-      for (final panel in panelesDe(usuario.rol))
-        Box(
-          SecondaryButton(label: panel.titulo, icon: panel.icono, onPressed: () => context.go(panel.ruta)),
-          gapAfter: 12,
-        ),
-      // RF-035: cambiar la contraseña de la cuenta con sesión iniciada
-      Box(
+      // Escritorio: datos a la izquierda y acciones en un panel lateral. Móvil: apilado.
+      Box(Columnas(
+        flexIzquierda: 2,
+        flexDerecha: 1,
+        izquierda: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          _Cuenta(usuario),
+          const SizedBox(height: 16),
+          _Entrenamiento(esCliente: usuario.rol == RolUsuario.cliente),
+        ]),
+        derecha: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          _Acciones(usuario.rol),
+          const SizedBox(height: 16),
+          // Ley 8968: consentimiento de datos de salud y derechos ARCO
+          const PrivacidadPanel(),
+        ]),
+      )),
+    ]);
+  }
+}
+
+/// Paneles de trabajo del rol, cambiar contraseña y cerrar sesión.
+class _Acciones extends StatelessWidget {
+  const _Acciones(this.rol);
+  final RolUsuario rol;
+
+  @override
+  Widget build(BuildContext context) {
+    final paneles = panelesDe(rol);
+    return Panel(
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (paneles.isNotEmpty) ...[
+          const Eyebrow('Paneles de trabajo'),
+          const SizedBox(height: 10),
+          for (final panel in paneles) ...[
+            SecondaryButton(label: panel.titulo, icon: panel.icono, onPressed: () => context.go(panel.ruta)),
+            const SizedBox(height: 10),
+          ],
+          const SizedBox(height: 8),
+        ],
+        const Eyebrow('Seguridad'),
+        const SizedBox(height: 10),
+        // RF-035: cambiar la contraseña de la cuenta con sesión iniciada
         SecondaryButton(
           label: 'Cambiar contraseña',
           icon: Icons.lock_outline,
@@ -60,10 +81,8 @@ class PerfilView extends StatelessWidget {
             );
           },
         ),
-        gapAfter: 12,
-      ),
-      // Cerrar sesión: al limpiar la sesión, el router redirige solo a /login.
-      Box(
+        const SizedBox(height: 6),
+        // Cerrar sesión: al limpiar la sesión, el router redirige solo a /login.
         OutlinedButton.icon(
           onPressed: () => context.read<AuthController>().cerrarSesion(),
           icon: const Icon(Icons.logout),
@@ -75,8 +94,8 @@ class PerfilView extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
         ),
-      ),
-    ]);
+      ]),
+    );
   }
 }
 
@@ -126,6 +145,7 @@ class _Entrenamiento extends StatelessWidget {
     final loading = context.select<PerfilController, bool>((c) => c.loading);
     final error = context.select<PerfilController, String?>((c) => c.error);
     final p = context.select<PerfilController, UserProfile>((c) => c.profile);
+    final salud = context.select<ConsentimientoController, bool>((c) => c.datosSalud);
 
     if (error != null) return ErrorPanel(message: error, onRetry: () => context.read<PerfilController>().load());
     if (loading) return const SkeletonScope(child: SkeletonBox(height: 96, radius: 18));
@@ -133,8 +153,11 @@ class _Entrenamiento extends StatelessWidget {
     return Panel(
       child: Wrap(spacing: 32, runSpacing: 14, children: [
         _Dato('Entrenador asignado', p.coachName ?? 'Sin entrenador asignado'),
-        _Dato('Objetivo actual', p.goal ?? 'Sin definir'),
-        _Dato('Última medición', p.lastMeasurementLabel?.replaceFirst('Última medición · ', '') ?? 'Sin mediciones'),
+        // Sin consentimiento de salud no se muestra nada que venga de sus mediciones
+        if (salud) ...[
+          _Dato('Objetivo actual', p.goal ?? 'Sin definir'),
+          _Dato('Última medición', p.lastMeasurementLabel?.replaceFirst('Última medición · ', '') ?? 'Sin mediciones'),
+        ],
         if (esCliente) _Dato('Fecha de pago', p.fechaPago == null ? 'Sin registrar' : fechaCorta(p.fechaPago!)),
       ]),
     );

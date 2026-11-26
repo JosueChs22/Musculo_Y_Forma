@@ -72,12 +72,9 @@ class _ReglamentosViewState extends State<ReglamentosView> {
           child: Text('Aún no hay reglamentos publicados.', style: ts(15, color: AppColors.pizarra)),
         ))
       else
-        SliverList.builder(
+        SliverRejilla(
           itemCount: lista.length,
-          itemBuilder: (context, i) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _ReglamentoTile(lista[i]),
-          ),
+          itemBuilder: (context, i) => _ReglamentoTile(lista[i]),
         ),
     ]);
   }

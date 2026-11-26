@@ -12,7 +12,6 @@ import '../../progreso/controllers/progreso_controller.dart';
 import '../../progreso/models/body_metric.dart';
 import '../../rutinas/controllers/rutinas_controller.dart';
 import '../../rutinas/models/routine.dart';
-import '../../rutinas/views/widgets/workout_dialog.dart';
 
 /// Inicio: compone datos de Perfil, Rutinas y Progreso del usuario con sesión.
 /// Cada sección escucha solo su controlador y muestra su propio skeleton.
@@ -21,11 +20,24 @@ class InicioView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // En escritorio la rutina de hoy y la evaluación van lado a lado: lo
+    // importante se ve completo sin bajar. En móvil se apilan.
     return const SliverPage(slivers: [
-      Box(_Greeting(), gapAfter: 28),
-      Box(_TodayHero(), gapAfter: 24),
-      Box(_CoachCard(), gapAfter: 40),
-      Box(_EvaluationSection(), gapAfter: 40),
+      Box(_Greeting(), gapAfter: 24),
+      Box(
+        Columnas(
+          flexIzquierda: 3,
+          flexDerecha: 2,
+          espacio: 24,
+          izquierda: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            _TodayHero(),
+            SizedBox(height: 20),
+            _CoachCard(),
+          ]),
+          derecha: _EvaluationSection(),
+        ),
+        gapAfter: 36,
+      ),
       Box(_WeekSection()),
     ]);
   }
@@ -103,7 +115,7 @@ class _TodayHero extends StatelessWidget {
           PrimaryButton(
             label: progress > 0 ? 'Continuar rutina · $progress%' : 'Empezar rutina',
             icon: Icons.play_arrow_rounded,
-            onPressed: () => showWorkoutDialog(context, title),
+            onPressed: () => context.go('/entrenar/${routine.id}'),
           ),
         ],
       ),
@@ -256,7 +268,7 @@ class _WeekSection extends StatelessWidget {
               number: (i + 1).toString().padLeft(2, '0'),
               routine: routines[i],
               band: _bands[i % _bands.length],
-              onTap: () => showWorkoutDialog(context, routines[i].title),
+              onTap: () => context.go('/entrenar/${routines[i].id}'),
             ),
         ]),
     ]);

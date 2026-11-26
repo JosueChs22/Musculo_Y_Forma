@@ -60,7 +60,6 @@ class _ComparacionMedicionesViewState extends State<ComparacionMedicionesView> {
       );
 
   Widget _indicador(ComparacionIndicador indicador) => Container(
-        margin: const EdgeInsets.only(top: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppColors.niebla,
@@ -164,9 +163,13 @@ class _ComparacionMedicionesViewState extends State<ComparacionMedicionesView> {
                               'cuando el valor anterior es cero.',
                               style: ts(13, color: AppColors.pizarra),
                             ),
-                            for (final indicador
-                                in compararMediciones(anterior, actual))
-                              _indicador(indicador),
+                            const SizedBox(height: 10),
+                            // Indicadores en cuadrícula: hasta 3 por fila en escritorio
+                            ResponsiveGrid(desktopCols: 3, spacing: 10, children: [
+                              for (final indicador
+                                  in compararMediciones(anterior, actual))
+                                _indicador(indicador),
+                            ]),
                           ],
                         );
                       },

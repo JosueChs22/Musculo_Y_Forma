@@ -6,6 +6,7 @@ import '../../../core/brand.dart';
 import '../../../core/theme.dart';
 import '../../../core/validators.dart';
 import '../../../core/widgets.dart';
+import '../../legal/views/widgets/enlaces_legales.dart';
 import '../controllers/auth_controller.dart';
 
 class LoginView extends StatefulWidget {
@@ -48,6 +49,8 @@ class _LoginViewState extends State<LoginView> {
               child: Panel(
                 padding: const EdgeInsets.all(28),
                 radius: 28,
+                // WCAG 3.3.8: AutofillGroup deja que el gestor de contraseñas rellene ambos campos
+                child: AutofillGroup(
                 child: Form(
                 key: _form,
                 child: Column(
@@ -90,9 +93,19 @@ class _LoginViewState extends State<LoginView> {
                     ),
                     if (auth.errorLogin != null) ...[
                       const SizedBox(height: 16),
-                      Text(
-                        auth.errorLogin!,
-                        style: ts(14, weight: kSemi, color: AppColors.danger),
+                      // WCAG 1.4.1 / 4.1.3: ícono + texto y se anuncia al lector de pantalla
+                      Semantics(
+                        liveRegion: true,
+                        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          const Icon(Icons.error_outline, size: 18, color: AppColors.danger),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              auth.errorLogin!,
+                              style: ts(14, weight: kSemi, color: AppColors.danger),
+                            ),
+                          ),
+                        ]),
                       ),
                     ],
                     Align(
@@ -113,8 +126,12 @@ class _LoginViewState extends State<LoginView> {
                         style: ts(13, color: AppColors.pizarra),
                       ),
                     ],
+                    const SizedBox(height: 16),
+                    // Ley 8968: el aviso de privacidad se puede leer antes de ingresar
+                    const EnlacesLegales(),
                   ],
                 ),
+              ),
               ),
               ),
             ),

@@ -136,12 +136,9 @@ class _EjerciciosViewState extends State<EjerciciosView> {
         ))
       else ...[
         // REGLA 4: lista virtualizada
-        SliverList.builder(
+        SliverRejilla(
           itemCount: items.length,
-          itemBuilder: (context, i) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _EjercicioTile(items[i]),
-          ),
+          itemBuilder: (context, i) => _EjercicioTile(items[i]),
         ),
         if (c.cargandoMas)
           const Box(SkeletonScope(child: Panel(child: SkeletonRow())))
@@ -330,7 +327,15 @@ void _mostrarDetalle(BuildContext context, Ejercicio e) {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Center(
-                        child: ImagenRed(e.gifUrl, size: 240, radius: 16)),
+                        child: Semantics(
+                      image: true,
+                      label: 'Demostración del ejercicio ${e.nombre}',
+                      // WCAG 2.3.3: imagen fija si el sistema pide reducir movimiento
+                      child: ImagenRed(
+                          MediaQuery.disableAnimationsOf(context) ? (e.imagenUrl ?? e.gifUrl) : e.gifUrl,
+                          size: 240,
+                          radius: 16),
+                    )),
                   ),
                 _Dato('Grupo muscular', e.grupoMuscular),
                 _Dato('Herramienta o equipo', e.herramienta),

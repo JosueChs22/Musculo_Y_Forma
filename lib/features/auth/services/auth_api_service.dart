@@ -36,7 +36,7 @@ class AuthApiService implements AuthService {
     if (res.statusCode >= 400) {
       // La API responde {error: '...'} (400, 401, 403, 429...) o {errors: [...]} (422)
       throw AuthException(
-        body['error'] as String? ??
+        (body['error'] is String ? body['error'] as String : null) ??
             (body['errors'] != null
                 ? 'Revisa los datos ingresados.'
                 : 'No se pudo completar la solicitud (${res.statusCode}).'),
@@ -58,10 +58,14 @@ class AuthApiService implements AuthService {
       ),
     );
 
-    final token = body['token'] as String;
+    final token = body['token'];
+    final datos = body['usuario'];
+    if (token is! String || token.isEmpty || datos is! Map<String, dynamic>) {
+      throw const AuthException('Respuesta inesperada del servidor. Inténtalo de nuevo.');
+    }
     ApiSession.token = token;
     await _almacen.guardarToken(token);
-    return Usuario.fromJson(body['usuario'] as Map<String, dynamic>);
+    return Usuario.fromJson(datos);
   }
 
   @override

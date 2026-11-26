@@ -25,6 +25,7 @@ class PlanesController extends BaseController {
   String _texto = ''; // lo que realmente se le pidió a la API
   CategoriaPlan? _categoria; // null = todas
   bool _verInhabilitados = false;
+  bool? _asignado; // null = asignados y sin asignar
 
   // Cambia con cada filtro nuevo, para descartar respuestas de un filtro anterior.
   int _version = 0;
@@ -38,7 +39,8 @@ class PlanesController extends BaseController {
   String get escrito => _escrito;
   CategoriaPlan? get categoriaFiltro => _categoria;
   bool get verInhabilitados => _verInhabilitados;
-  bool get hayFiltros => _texto.isNotEmpty || _categoria != null;
+  bool? get asignadoFiltro => _asignado;
+  bool get hayFiltros => _texto.isNotEmpty || _categoria != null || _asignado != null;
   bool get textoMuyCorto => _escrito.isNotEmpty && _escrito.length < minimoBusqueda;
 
   /// Mensaje pendiente de mostrar (se entrega una sola vez).
@@ -55,7 +57,7 @@ class PlanesController extends BaseController {
     PaginaPlanes pagina;
     do {
       version = _version;
-      pagina = await _service.listar(texto: _texto, categoria: _categoria, soloActivos: !_verInhabilitados);
+      pagina = await _service.listar(texto: _texto, categoria: _categoria, soloActivos: !_verInhabilitados, asignado: _asignado);
     } while (version != _version);
     _items = pagina.items;
     _siguiente = pagina.siguiente;
@@ -87,6 +89,13 @@ class PlanesController extends BaseController {
     _recargar();
   }
 
+  /// true = solo asignados, false = solo sin asignar, null = todos.
+  void filtrarAsignacion(bool? asignado) {
+    if (asignado == _asignado) return;
+    _asignado = asignado;
+    _recargar();
+  }
+
   void mostrarInhabilitados(bool ver) {
     if (ver == _verInhabilitados) return;
     _verInhabilitados = ver;
@@ -103,6 +112,7 @@ class PlanesController extends BaseController {
         texto: _texto,
         categoria: _categoria,
         soloActivos: !_verInhabilitados,
+        asignado: _asignado,
         cursor: _siguiente,
       );
       if (version == _version) {

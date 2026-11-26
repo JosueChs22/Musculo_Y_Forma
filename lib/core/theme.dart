@@ -13,6 +13,9 @@ class AppColors {
   static const pizarra = Color(0xFF565A7A); // texto secundario
 
   // Derivados de la paleta
+  /// Ámbar oscurecido (mismo tono): para líneas/íconos/texto sobre fondos claros,
+  /// donde el ámbar puro (1,7:1) no cumple WCAG 1.4.3 / 1.4.11. 4,9:1 sobre blanco.
+  static const ambarOscuro = Color(0xFF9C6512);
   static const ink = Color(0xFF1B1C4D); // texto principal (índigo oscurecido)
   static const card = Color(0xFFFFFFFF);
   static const line = Color(0xFFE2E4EF); // índigo al 12 % sobre blanco

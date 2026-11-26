@@ -9,10 +9,16 @@ import 'core/theme.dart';
 import 'features/admin/views/reglamentos_view.dart';
 import 'features/admin/views/usuarios_view.dart';
 import 'features/auth/controllers/auth_controller.dart';
+import 'features/auth/models/usuario.dart';
 import 'features/auth/views/login_view.dart';
 import 'features/auth/views/recuperar_view.dart';
 import 'features/ejercicios/views/ejercicios_view.dart';
+import 'features/horarios/views/horarios_view.dart';
 import 'features/inicio/views/inicio_view.dart';
+import 'features/legal/controllers/consentimiento_controller.dart';
+import 'features/legal/legal_textos.dart';
+import 'features/legal/views/consentimiento_view.dart';
+import 'features/legal/views/documento_legal_view.dart';
 import 'features/mediciones/views/mediciones_entrenador_view.dart';
 import 'features/mediciones/views/historial_mediciones_view.dart';
 import 'features/perfil/views/perfil_view.dart';
@@ -20,6 +26,7 @@ import 'features/planes/views/plan_editor_view.dart';
 import 'features/planes/views/citas_entrenador_view.dart';
 import 'features/planes/views/planes_view.dart';
 import 'features/progreso/views/progreso_view.dart';
+import 'features/rutinas/views/entrenamiento_view.dart';
 import 'features/rutinas/views/rutinas_view.dart';
 import 'features/anuncios/views/anuncios_cliente_view.dart';
 import 'features/reglamento/views/reglamento_view.dart';
@@ -63,28 +70,68 @@ class _Desplazamiento extends MaterialScrollBehavior {
       const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics());
 }
 
+/// Rutas públicas de solo lectura: se abren con o sin sesión y sin pasar por el consentimiento.
+const rutasLegales = {'/privacidad', '/terminos'};
+
+/// Decide a dónde redirigir. Separada del router para poder probarla (test/consentimiento_test.dart).
+String? redirigir({
+  required String ruta,
+  required bool autenticado,
+  required RolUsuario? rol,
+  required bool requiereConsentimiento,
+}) {
+  if (rutasLegales.contains(ruta)) return null;
+  // Sin sesión solo se puede estar en el login o recuperando la contraseña
+  final publica = ruta == '/login' || ruta == '/recuperar';
+  if (!autenticado) return publica ? null : '/login';
+  if (publica) return '/';
+  // Ley 8968: primer ingreso o aviso nuevo -> pantalla de consentimiento (bloqueante)
+  if (requiereConsentimiento) return ruta == '/consentimiento' ? null : '/consentimiento';
+  if (ruta == '/consentimiento') return '/';
+  // Paneles por rol (core/permisos.dart); un rol sin permiso vuelve al inicio
+  return puedeEntrar(rol, ruta) ? null : '/';
+}
+
 /// [inicial]: ruta con la que se abrió la app (por ejemplo al recargar en el navegador).
-GoRouter buildRouter(AuthController auth, {String inicial = '/'}) => GoRouter(
+GoRouter buildRouter(AuthController auth,
+        {String inicial = '/', ConsentimientoController? consentimiento}) =>
+    GoRouter(
       initialLocation: inicial,
       // La ruta inicial se toma al arrancar: la pantalla de "abriendo sesión" ya cambió la URL
       overridePlatformDefaultLocation: true,
       // Cada vez que cambia la sesión (login/logout) se vuelve a evaluar redirect.
-      refreshListenable: auth,
-      redirect: (context, state) {
-        final ruta = state.matchedLocation;
-        // Sin sesión solo se puede estar en el login o recuperando la contraseña
-        final publica = ruta == '/login' || ruta == '/recuperar';
-        if (!auth.autenticado) return publica ? null : '/login';
-        if (publica) return '/';
-        // Paneles por rol (core/permisos.dart); un rol sin permiso vuelve al inicio
-        return puedeEntrar(auth.usuario!.rol, ruta) ? null : '/';
-      },
+      // y también cuando cambia el consentimiento (pantalla bloqueante).
+      refreshListenable:
+          consentimiento == null ? auth : Listenable.merge([auth, consentimiento]),
+      redirect: (context, state) => redirigir(
+        ruta: state.matchedLocation,
+        autenticado: auth.autenticado,
+        rol: auth.usuario?.rol,
+        requiereConsentimiento: consentimiento?.requiereAceptar ?? false,
+      ),
       routes: [
         GoRoute(
             path: '/login', pageBuilder: (c, s) => _page(s, const LoginView())),
         GoRoute(
             path: '/recuperar',
             pageBuilder: (c, s) => _page(s, const RecuperarView())),
+        // Textos legales (públicos) y consentimiento (Ley 8968)
+        GoRoute(
+            path: '/privacidad',
+            pageBuilder: (c, s) =>
+                _page(s, const DocumentoLegalView(documento: kPoliticaPrivacidad))),
+        GoRoute(
+            path: '/terminos',
+            pageBuilder: (c, s) =>
+                _page(s, const DocumentoLegalView(documento: kTerminos))),
+        GoRoute(
+            path: '/consentimiento',
+            pageBuilder: (c, s) => _page(s, const ConsentimientoView())),
+        // Modo entrenamiento: pantalla completa, sin barras de navegación
+        GoRoute(
+          path: '/entrenar/:id',
+          pageBuilder: (c, s) => _page(s, EntrenamientoView(id: s.pathParameters['id']!)),
+        ),
         ShellRoute(
           builder: (context, state, child) =>
               AppShell(location: state.uri.path, child: child),
@@ -106,6 +153,9 @@ GoRouter buildRouter(AuthController auth, {String inicial = '/'}) => GoRouter(
             GoRoute(
                 path: '/reglamento',
                 pageBuilder: (c, s) => _page(s, const ReglamentoView())),
+            GoRoute(
+                path: '/horarios',
+                pageBuilder: (c, s) => _page(s, const HorariosView())),
             GoRoute(
                 path: '/coach',
                 pageBuilder: (c, s) => _page(s, const PlanesView())),
@@ -187,8 +237,9 @@ class _GmyfAppState extends State<GmyfApp> {
         home: const _Restaurando(),
       );
     }
-    final router = _router ??=
-        buildRouter(context.read<AuthController>(), inicial: _rutaInicial);
+    final router = _router ??= buildRouter(context.read<AuthController>(),
+        inicial: _rutaInicial,
+        consentimiento: context.read<ConsentimientoController>());
     return MaterialApp.router(
       title: 'Músculo y Forma',
       scrollBehavior: const _Desplazamiento(),

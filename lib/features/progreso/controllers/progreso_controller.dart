@@ -28,8 +28,34 @@ class ProgresoController extends BaseController with DatosDelUsuario {
   /// true si el usuario todavía no tiene ninguna medición.
   bool get sinMediciones => _history.isEmpty;
 
+  // Ley 8968: sin consentimiento expreso de datos de salud no se piden mediciones a la API
+  bool _datosSaludPermitidos = false;
+  bool _cargadoConPermiso = false;
+  bool get datosSaludPermitidos => _datosSaludPermitidos;
+
+  /// Lo llama main.dart cuando cambia el consentimiento del usuario.
+  void permitirDatosSalud(bool permitido) {
+    if (permitido == _datosSaludPermitidos) return;
+    _datosSaludPermitidos = permitido;
+    if (!permitido) {
+      limpiar();
+      notify();
+    } else if (idUsuario != null) {
+      // Fuera del build del proveedor; si había una carga en curso (hecha sin permiso),
+      // se vuelve a pedir al terminar.
+      unawaited(Future.microtask(() => load().whenComplete(() {
+            if (_datosSaludPermitidos && !_cargadoConPermiso) unawaited(load());
+          })));
+    }
+  }
+
   @override
   Future<void> cargarDatos() async {
+    _cargadoConPermiso = _datosSaludPermitidos;
+    if (!_datosSaludPermitidos) {
+      limpiar();
+      return;
+    }
     // REGLA 10: peticiones independientes en paralelo.
     final (metrics, history, inbody) = await (
       _service.getBodyMetrics(),

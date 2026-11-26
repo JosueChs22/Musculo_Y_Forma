@@ -25,7 +25,7 @@ class GraficoEvolucion extends StatefulWidget {
 class _GraficoEvolucionState extends State<GraficoEvolucion> {
   static const _colores = [
     AppColors.cobalto,
-    AppColors.ambar,
+    AppColors.ambarOscuro, // WCAG 1.4.11: el ámbar puro no llega a 3:1 sobre blanco
     AppColors.indigo,
     AppColors.pizarra,
   ];
@@ -50,6 +50,19 @@ class _GraficoEvolucionState extends State<GraficoEvolucion> {
   String _fecha(DateTime fecha) {
     final local = fecha.toLocal();
     return '${fechaCitaLabel(local)} · ${horaCitaLabel(local)}';
+  }
+
+  String _resumen(List<IndicadorFisico> series) {
+    final partes = <String>[];
+    for (final ind in series) {
+      final vals = [
+        for (final m in widget.mediciones)
+          if (ind.valor(m) != null) ind.valor(m)!,
+      ];
+      if (vals.isEmpty) continue;
+      partes.add('${ind.nombre}: de ${vals.first} a ${vals.last} ${ind.unidad}');
+    }
+    return 'Gráfica de evolución, ${widget.mediciones.length} evaluaciones. ${partes.join('. ')}';
   }
 
   @override
@@ -104,7 +117,11 @@ class _GraficoEvolucionState extends State<GraficoEvolucion> {
             style: ts(14, color: AppColors.pizarra),
           )
         else ...[
-          SizedBox(
+          Semantics(
+            // WCAG 1.1.1: alternativa de texto de la gráfica
+            label: _resumen(conDatos),
+            child: ExcludeSemantics(
+              child: SizedBox(
             height: 280,
             child: LineChart(
               LineChartData(
@@ -172,6 +189,8 @@ class _GraficoEvolucionState extends State<GraficoEvolucion> {
                     ),
                 ],
               ),
+            ),
+          ),
             ),
           ),
           const SizedBox(height: 8),

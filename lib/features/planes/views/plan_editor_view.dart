@@ -132,9 +132,17 @@ class _PlanEditorViewState extends State<PlanEditorView> {
               ),
               gapAfter: 16,
             ),
-          Box(_DatosGenerales(controller: _c, nombre: _nombre, observaciones: _observaciones, habilitado: habilitado),
-              gapAfter: 16),
-          Box(_Asignacion(controller: _c, habilitado: habilitado, onElegir: _elegirCliente), gapAfter: 24),
+          // Escritorio: datos del plan y cliente asignado lado a lado
+          Box(
+            Columnas(
+              flexIzquierda: 3,
+              flexDerecha: 2,
+              espacio: 16,
+              izquierda: _DatosGenerales(controller: _c, nombre: _nombre, observaciones: _observaciones, habilitado: habilitado),
+              derecha: _Asignacion(controller: _c, habilitado: habilitado, onElegir: _elegirCliente),
+            ),
+            gapAfter: 24,
+          ),
           Box(
             SectionHeader(
               eyebrow: 'Ejercicios',
@@ -157,16 +165,13 @@ class _PlanEditorViewState extends State<PlanEditorView> {
             )
           else
             // REGLA 4: lista virtualizada (máximo 50 ejercicios por plan)
-            SliverList.builder(
+            // En escritorio, dos ejercicios por fila; cada uno conserva su clave
+            SliverRejilla(
               itemCount: ejercicios.length,
-              findChildIndexCallback: (key) {
-                if (key is! ValueKey<String>) return null;
-                final i = ejercicios.indexWhere((e) => e.idEjercicio == key.value);
-                return i == -1 ? null : i;
-              },
-              itemBuilder: (context, i) => Padding(
+              anchoMinimo: 500,
+              maxColumnas: 2,
+              itemBuilder: (context, i) => KeyedSubtree(
                 key: ValueKey(ejercicios[i].idEjercicio),
-                padding: const EdgeInsets.only(bottom: 12),
                 child: _FilaEjercicio(
                   controller: _c,
                   ejercicio: ejercicios[i],
@@ -223,17 +228,13 @@ class _DatosGenerales extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         const Eyebrow('Tipo de plan'),
         const SizedBox(height: 8),
-        SegmentedButton<CategoriaPlan>(
-          segments: [
-            for (final cat in CategoriaPlan.values) ButtonSegment(value: cat, label: Text(cat.etiqueta)),
-          ],
-          selected: {c.categoria},
-          showSelectedIcon: false,
-          onSelectionChanged: habilitado ? (s) => c.cambiarCategoria(s.first) : null,
-          style: SegmentedButton.styleFrom(
-            selectedBackgroundColor: AppColors.indigo,
-            selectedForegroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 8),
+        // SegmentedPill ajusta el tamaño de letra al ancho: en teléfono "Entrenamiento" no se parte
+        IgnorePointer(
+          ignoring: !habilitado,
+          child: SegmentedPill<CategoriaPlan>(
+            opciones: [for (final cat in CategoriaPlan.values) (cat, cat.etiqueta)],
+            seleccion: c.categoria,
+            onCambio: c.cambiarCategoria,
           ),
         ),
         const SizedBox(height: 16),
@@ -290,13 +291,16 @@ class _Asignacion extends StatelessWidget {
           Row(mainAxisSize: MainAxisSize.min, children: [
             Avatar(cliente?.iniciales ?? '?', size: 44, bg: AppColors.indigoSoft, fg: AppColors.indigo),
             const SizedBox(width: 14),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              const Eyebrow('Asignado a'),
-              const SizedBox(height: 2),
-              Text(cliente?.nombre ?? 'Sin asignar', style: ts(16, weight: kSemi)),
-              if (cliente == null && controller.esNuevo)
-                Text('Puedes asignarlo ahora o después, desde la lista.', style: ts(13, color: AppColors.pizarra)),
-            ]),
+            // Flexible: en teléfono el texto se parte en vez de desbordar la fila
+            Flexible(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                const Eyebrow('Asignado a'),
+                const SizedBox(height: 2),
+                Text(cliente?.nombre ?? 'Sin asignar', style: ts(16, weight: kSemi)),
+                if (cliente == null && controller.esNuevo)
+                  Text('Puedes asignarlo ahora o después, desde la lista.', style: ts(13, color: AppColors.pizarra)),
+              ]),
+            ),
           ]),
           Wrap(spacing: 8, runSpacing: 8, children: [
             SecondaryButton(
@@ -393,7 +397,7 @@ class _FilaEjercicioState extends State<_FilaEjercicio> {
             child: Text('${widget.posicion + 1}'.padLeft(2, '0'), style: display(18, color: AppColors.indigo)),
           ),
           const SizedBox(width: 12),
-          ImagenRed(e.imagenUrl, size: 56),
+          ImagenRed(e.gifUrl ?? e.imagenUrl, size: 56),
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

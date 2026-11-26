@@ -2,9 +2,12 @@
     <!-- La app llama a la API: sin este permiso la versión de lanzamiento no tiene red -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="pulso_app"
+        android:label="Músculo y Forma"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:usesCleartextTraffic="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"

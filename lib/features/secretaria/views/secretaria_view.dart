@@ -15,7 +15,7 @@ import 'widgets/horario_form_dialog.dart';
 import 'widgets/horarios_especiales_section.dart';
 import 'package:go_router/go_router.dart';
 
-/// Panel de Secretar├¡a: clases, horarios, citas y clientes.
+/// Panel de Secretaría: clases, horarios, citas y clientes.
 class SecretariaView extends StatefulWidget {
   const SecretariaView({super.key});
 
@@ -30,7 +30,7 @@ class _SecretariaViewState extends State<SecretariaView> {
   void initState() {
     super.initState();
 
-    // La API necesita el token de la sesi├│n.
+    // La API necesita el token de la sesión.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<ClasesController>().load();
@@ -57,113 +57,20 @@ class _SecretariaViewState extends State<SecretariaView> {
           gapAfter: 16,
         ),
 
-        // Men├║ de Secretar├¡a.
+        // Menú adaptable: incluye horarios especiales del Sprint 2.
         Box(
-          Panel(
-            padding: const EdgeInsets.all(8),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                // Dise├▒o adaptable para pantallas peque├▒as.
-                if (constraints.maxWidth < 1100) {
-                  return Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _SeccionChip(
-                        label: 'Horarios',
-                        icon: Icons.schedule,
-                        selected: _seccion == _SeccionSecretaria.horarios,
-                        onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.horarios,
-                        ),
-                      ),
-                      _SeccionChip(
-                        label: 'Horarios especiales',
-                        icon: Icons.event_busy_outlined,
-                        selected:
-                            _seccion == _SeccionSecretaria.horariosEspeciales,
-                        onSelected: () => setState(
-                          () =>
-                              _seccion = _SeccionSecretaria.horariosEspeciales,
-                        ),
-                      ),
-                      _SeccionChip(
-                        label: 'Agendar cita',
-                        icon: Icons.event_available_outlined,
-                        selected: _seccion == _SeccionSecretaria.agendarCita,
-                        onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.agendarCita,
-                        ),
-                      ),
-                      _SeccionChip(
-                        label: 'Consultar citas',
-                        icon: Icons.event_note_outlined,
-                        selected: _seccion == _SeccionSecretaria.consultarCitas,
-                        onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.consultarCitas,
-                        ),
-                      ),
-                      _SeccionChip(
-                        label: 'Gestionar cliente',
-                        icon: Icons.groups_outlined,
-                        selected:
-                            _seccion == _SeccionSecretaria.gestionarCliente,
-                        onSelected: () => setState(
-                          () => _seccion = _SeccionSecretaria.gestionarCliente,
-                        ),
-                      ),
-                    ],
-                  );
-                }
-
-                // Dise├▒o para pantallas grandes.
-                return SegmentedButton<_SeccionSecretaria>(
-                  segments: const [
-                    ButtonSegment(
-                      value: _SeccionSecretaria.horarios,
-                      label: Text('Horarios'),
-                      icon: Icon(Icons.schedule),
-                    ),
-                    ButtonSegment(
-                      value: _SeccionSecretaria.horariosEspeciales,
-                      label: Text('Horarios especiales'),
-                      icon: Icon(Icons.event_busy_outlined),
-                    ),
-                    ButtonSegment(
-                      value: _SeccionSecretaria.agendarCita,
-                      label: Text('Agendar cita'),
-                      icon: Icon(Icons.event_available_outlined),
-                    ),
-                    ButtonSegment(
-                      value: _SeccionSecretaria.consultarCitas,
-                      label: Text('Consultar citas'),
-                      icon: Icon(Icons.event_note_outlined),
-                    ),
-                    ButtonSegment(
-                      value: _SeccionSecretaria.gestionarCliente,
-                      label: Text('Gestionar cliente'),
-                      icon: Icon(Icons.groups_outlined),
-                    ),
-                  ],
-                  selected: {_seccion},
-                  showSelectedIcon: false,
-                  onSelectionChanged: (seleccion) {
-                    setState(() {
-                      _seccion = seleccion.first;
-                    });
-                  },
-                  style: SegmentedButton.styleFrom(
-                    selectedBackgroundColor: AppColors.indigo,
-                    selectedForegroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                    ),
-                  ),
-                );
-              },
-            ),
+          SegmentedPill<_SeccionSecretaria>(
+            opciones: const [
+              (_SeccionSecretaria.horarios, 'Horarios'),
+              (_SeccionSecretaria.horariosEspeciales, 'Horarios especiales'),
+              (_SeccionSecretaria.agendarCita, 'Agendar cita'),
+              (_SeccionSecretaria.consultarCitas, 'Consultar citas'),
+              (_SeccionSecretaria.gestionarCliente, 'Clientes'),
+            ],
+            seleccion: _seccion,
+            onCambio: (s) => setState(() => _seccion = s),
           ),
-          gapAfter: 24,
+          gapAfter: 16,
         ),
 
         // Horarios de clases.
@@ -176,13 +83,13 @@ class _SecretariaViewState extends State<SecretariaView> {
         ),
 
         // Sprint 2: Horarios especiales.
-        // Solo se construye al entrar a esta secci├│n.
+        // Solo se construye al entrar a esta sección.
         if (_seccion == _SeccionSecretaria.horariosEspeciales)
           const Box(
             HorariosEspecialesSection(),
           ),
 
-        // Gesti├│n de clientes.
+        // Gestión de clientes.
         Box(
           Visibility(
             visible: _seccion == _SeccionSecretaria.gestionarCliente,
@@ -221,42 +128,6 @@ enum _SeccionSecretaria {
   consultarCitas,
 }
 
-class _SeccionChip extends StatelessWidget {
-  const _SeccionChip({
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return ChoiceChip(
-      avatar: Icon(
-        icon,
-        size: 18,
-        color: selected ? Colors.white : AppColors.pizarra,
-      ),
-      label: Text(label),
-      selected: selected,
-      showCheckmark: false,
-      onSelected: (_) => onSelected(),
-      selectedColor: AppColors.indigo,
-      side: BorderSide.none,
-      labelStyle: ts(
-        14,
-        weight: kSemi,
-        color: selected ? Colors.white : AppColors.ink,
-      ),
-    );
-  }
-}
-
 class _Header extends StatelessWidget {
   const _Header();
 
@@ -264,13 +135,13 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return const PageTitle(
       eyebrow: 'Panel de Secretaria',
-      title: 'Gesti├│n de Secretar├¡a',
+      title: 'Gestión de Secretaría',
       subtitle: 'Clases, horarios, citas y clientes.',
     );
   }
 }
 
-// ÔöÇÔöÇ Secci├│n de Clases ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Sección de Clases ──────────────────────────────────────────────────────
 
 class _ClasesSection extends StatelessWidget {
   const _ClasesSection();
@@ -293,7 +164,7 @@ class _ClasesSection extends StatelessWidget {
           children: [
             const Expanded(
               child: SectionHeader(
-                eyebrow: 'Cat├ílogo activo',
+                eyebrow: 'Catálogo activo',
                 title: 'Clases',
               ),
             ),
@@ -359,7 +230,7 @@ class _ClasesSection extends StatelessWidget {
   }
 }
 
-// ÔöÇÔöÇ Tarjeta de Clase ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Tarjeta de Clase ───────────────────────────────────────────────────────
 
 class _ClaseCard extends StatelessWidget {
   const _ClaseCard({required this.clase});
@@ -445,7 +316,7 @@ class _ClaseCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Horarios de atenci├│n',
+                      'Horarios de atención',
                       style: ts(
                         13,
                         weight: kSemi,
@@ -573,7 +444,7 @@ class _ClaseCard extends StatelessWidget {
     final confirmar = await _confirmarDialog(
       context,
       titulo: 'Inhabilitar horario',
-      mensaje: '┬┐Inhabilitar el horario ${clase.horarios[index].diasLabel} '
+      mensaje: '¿Inhabilitar el horario ${clase.horarios[index].diasLabel} '
           '${clase.horarios[index].rangoHora}?',
     );
 
@@ -589,7 +460,7 @@ class _ClaseCard extends StatelessWidget {
   }
 }
 
-// ÔöÇÔöÇ Men├║ de opciones de Clase ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Menú de opciones de Clase ──────────────────────────────────────────────
 
 class _ClaseMenu extends StatelessWidget {
   const _ClaseMenu({required this.clase});
@@ -694,8 +565,8 @@ class _ClaseMenu extends StatelessWidget {
       final confirmar = await _confirmarDialog(
         context,
         titulo: 'Inhabilitar clase',
-        mensaje: '┬┐Inhabilitar la clase "${clase.nombre}"? '
-            'Todos sus horarios quedar├ín inactivos.',
+        mensaje: '¿Inhabilitar la clase "${clase.nombre}"? '
+            'Todos sus horarios quedarán inactivos.',
       );
 
       if (!confirmar || !context.mounted) return;
@@ -711,7 +582,7 @@ class _ClaseMenu extends StatelessWidget {
       final confirmar = await _confirmarDialog(
         context,
         titulo: 'Reactivar clase',
-        mensaje: '┬┐Reactivar la clase "${clase.nombre}"?',
+        mensaje: '¿Reactivar la clase "${clase.nombre}"?',
       );
 
       if (!confirmar || !context.mounted) return;
@@ -727,7 +598,7 @@ class _ClaseMenu extends StatelessWidget {
   }
 }
 
-// ÔöÇÔöÇ Fila de Horario ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Fila de Horario ────────────────────────────────────────────────────────
 
 class _HorarioRow extends StatelessWidget {
   const _HorarioRow({
@@ -750,7 +621,7 @@ class _HorarioRow extends StatelessWidget {
     final vigencia = [
       'Vigencia:',
       fechaInicio ?? 'Sin inicio definido',
-      'ÔÇö',
+      '—',
       fechaFin ?? 'Sin fin definido',
     ].join(' ');
 
@@ -844,7 +715,7 @@ class _HorarioRow extends StatelessWidget {
   }
 }
 
-// ÔöÇÔöÇ Helpers visuales ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Helpers visuales ───────────────────────────────────────────────────────
 
 class _EstadoPill extends StatelessWidget {
   const _EstadoPill({
@@ -918,7 +789,7 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-// ÔöÇÔöÇ Utilidades ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+// ── Utilidades ─────────────────────────────────────────────────────────────
 
 Future<bool> _confirmarDialog(
   BuildContext context, {

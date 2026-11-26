@@ -202,6 +202,7 @@ class _HorarioFormDialogState extends State<HorarioFormDialog> {
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
+        // Permitir desplazamiento en ventanas de poca altura.
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(28),
           child: Column(
@@ -389,32 +390,33 @@ class _DayChip extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: 44,
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? AppColors.indigo : AppColors.niebla,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected ? AppColors.indigo : AppColors.line,
+  Widget build(BuildContext context) => Pressable(
+        onTap: onTap,
+        radius: 12,
+        selected: selected,
+        semanticLabel: label,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 44,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? AppColors.indigo : AppColors.niebla,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: selected ? AppColors.indigo : AppColors.line,
+            ),
+          ),
+          child: Text(
+            label,
+            style: ts(
+              13,
+              weight: kSemi,
+              color: selected ? Colors.white : AppColors.pizarra,
+            ),
           ),
         ),
-        child: Text(
-          label,
-          style: ts(
-            13,
-            weight: kSemi,
-            color: selected ? Colors.white : AppColors.pizarra,
-          ),
-        ),
-      ),
-    );
-  }
+      );
 }
 
 class _TimeField extends StatelessWidget {
@@ -431,54 +433,37 @@ class _TimeField extends StatelessWidget {
   String get _formatted {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
-
     return '$hour:$minute';
   }
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.fill,
-          borderRadius: BorderRadius.circular(kRadiusControl),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: ts(
-                      12,
-                      color: AppColors.pizarra,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _formatted,
-                    style: ts(16, weight: kSemi),
-                  ),
-                ],
+  Widget build(BuildContext context) => Pressable(
+        onTap: onTap,
+        radius: kRadiusControl,
+        semanticLabel: '$label: $_formatted. Cambiar hora',
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColors.fill,
+            borderRadius: BorderRadius.circular(kRadiusControl),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: ts(12, color: AppColors.pizarra)),
+                    const SizedBox(height: 2),
+                    Text(_formatted, style: ts(16, weight: kSemi)),
+                  ],
+                ),
               ),
-            ),
-            const Icon(
-              Icons.access_time,
-              size: 18,
-              color: AppColors.pizarra,
-            ),
-          ],
+              const Icon(Icons.access_time, size: 18, color: AppColors.pizarra),
+            ],
+          ),
         ),
-      ),
-    );
-  }
+      );
 }
 
 class _DateField extends StatelessWidget {
@@ -494,8 +479,10 @@ class _DateField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
+      radius: kRadiusControl,
+      semanticLabel: '$label: ${date ?? 'Sin fecha'}. Elegir fecha',
       child: Container(
         padding: const EdgeInsets.symmetric(
           horizontal: 12,

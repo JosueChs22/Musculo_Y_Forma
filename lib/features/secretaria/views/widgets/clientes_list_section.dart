@@ -105,16 +105,11 @@ class ClientesListSection extends StatelessWidget {
                   ),
                 ),
               ],
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: controller.clientes.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) => _ClienteCard(
-                  cliente: controller.clientes[index],
-                  controller: controller,
-                ),
-              ),
+              // Clientes en cuadrícula: hasta 3 por fila en escritorio
+              ResponsiveGrid(desktopCols: 3, spacing: 12, children: [
+                for (final cliente in controller.clientes)
+                  _ClienteCard(cliente: cliente, controller: controller),
+              ]),
               if (controller.hayMas) ...[
                 const SizedBox(height: 16),
                 PrimaryButton(

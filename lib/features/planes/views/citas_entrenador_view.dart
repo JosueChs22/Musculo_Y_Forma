@@ -159,74 +159,84 @@ class _CitasEntrenadorViewState extends State<CitasEntrenadorView> {
                     style: ts(14, color: AppColors.pizarra),
                   ),
                   const SizedBox(height: 12),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final selector = OutlinedButton.icon(
-                        onPressed: _cargando ? null : _elegirFecha,
-                        icon: const Icon(Icons.calendar_month_outlined),
-                        label: Text(fechaCitaLabel(_fecha)),
-                      );
-                      final consultar = PrimaryButton(
-                        label: 'Consultar citas',
-                        icon: Icons.search,
-                        busy: _cargando,
-                        onPressed: _cargando ? null : _consultarCitas,
-                      );
-                      if (constraints.maxWidth < 560) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                  // Escritorio: consulta por fecha y búsqueda por cliente lado a lado
+                  Columnas(
+                    flexIzquierda: 1,
+                    flexDerecha: 1,
+                    espacio: 16,
+                    izquierda: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final selector = OutlinedButton.icon(
+                          onPressed: _cargando ? null : _elegirFecha,
+                          icon: const Icon(Icons.calendar_month_outlined),
+                          label: Text(fechaCitaLabel(_fecha)),
+                        );
+                        final consultar = PrimaryButton(
+                          label: 'Consultar citas',
+                          icon: Icons.search,
+                          busy: _cargando,
+                          onPressed: _cargando ? null : _consultarCitas,
+                        );
+                        if (constraints.maxWidth < 560) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              selector,
+                              const SizedBox(height: 12),
+                              consultar,
+                            ],
+                          );
+                        }
+                        return Row(
                           children: [
-                            selector,
-                            const SizedBox(height: 12),
+                            Expanded(child: selector),
+                            const SizedBox(width: 12),
                             consultar,
                           ],
                         );
-                      }
-                      return Row(
-                        children: [
-                          Expanded(child: selector),
-                          const SizedBox(width: 12),
-                          consultar,
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _busquedaController,
-                    enabled: !_cargando,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => _buscarCitas(),
-                    decoration: InputDecoration(
-                      labelText: 'Buscar citas por cliente',
-                      hintText: 'Nombre o número de carné',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _busquedaController.text.isEmpty
-                          ? null
-                          : IconButton(
-                              tooltip: 'Limpiar búsqueda',
-                              onPressed: _cargando
-                                  ? null
-                                  : () {
-                                      _busquedaController.clear();
-                                      setState(() {
-                                        _modoBusqueda = false;
-                                        _citas = const [];
-                                        _consultada = false;
-                                      });
-                                    },
-                              icon: const Icon(Icons.close),
-                            ),
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: PrimaryButton(
-                      label: 'Buscar cita más reciente',
-                      icon: Icons.search,
-                      busy: _cargando && _modoBusqueda,
-                      onPressed: _cargando ? null : _buscarCitas,
+                    derecha: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextField(
+                          controller: _busquedaController,
+                          enabled: !_cargando,
+                          textInputAction: TextInputAction.search,
+                          onSubmitted: (_) => _buscarCitas(),
+                          decoration: InputDecoration(
+                            labelText: 'Buscar citas por cliente',
+                            hintText: 'Nombre o número de carné',
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: _busquedaController.text.isEmpty
+                                ? null
+                                : IconButton(
+                                    tooltip: 'Limpiar búsqueda',
+                                    onPressed: _cargando
+                                        ? null
+                                        : () {
+                                            _busquedaController.clear();
+                                            setState(() {
+                                              _modoBusqueda = false;
+                                              _citas = const [];
+                                              _consultada = false;
+                                            });
+                                          },
+                                    icon: const Icon(Icons.close),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: PrimaryButton(
+                            label: 'Buscar cita más reciente',
+                            icon: Icons.search,
+                            busy: _cargando && _modoBusqueda,
+                            onPressed: _cargando ? null : _buscarCitas,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   if (_error != null) ...[
@@ -251,18 +261,21 @@ class _CitasEntrenadorViewState extends State<CitasEntrenadorView> {
                           : 'No tienes citas registradas para esta fecha.',
                       style: ts(14, color: AppColors.pizarra),
                     ),
-                  ] else if (_citas.isNotEmpty) ...[
-                    const SizedBox(height: 20),
-                    for (final cita in _citas) ...[
-                      _CitaEntrenadorCard(cita: cita),
-                      const SizedBox(height: 10),
-                    ],
                   ],
                 ],
               ),
             ),
             gapAfter: 16,
           ),
+          // REGLA 4: lista virtualizada; dos citas por fila en escritorio
+          if (!_cargando && _citas.isNotEmpty)
+            SliverRejilla(
+              itemCount: _citas.length,
+              anchoMinimo: 420,
+              maxColumnas: 2,
+              espacio: 10,
+              itemBuilder: (context, i) => _CitaEntrenadorCard(cita: _citas[i]),
+            ),
         ],
       );
 }
@@ -287,7 +300,8 @@ class _CitaEntrenadorCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(cita.clienteNombreCompleto, style: ts(16, weight: kSemi)),
+                  Text(cita.clienteNombreCompleto,
+                      style: ts(16, weight: kSemi)),
                   const SizedBox(height: 2),
                   Text('Carné: ${cita.carne}', style: ts(13)),
                   Text(

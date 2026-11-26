@@ -57,7 +57,8 @@ class _ClaseFormDialogState extends State<ClaseFormDialog> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
-        child: Padding(
+        // Con poca altura (teclado abierto, ventana baja) el formulario se desplaza
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(28),
           child: Form(
             key: _formKey,
