@@ -10,7 +10,12 @@ import '../models/ejercicio.dart';
 import 'widgets/ejercicio_form_dialog.dart';
 import '../../planes/views/widgets/menu_entrenador.dart';
 
-/// Panel del Entrenador: catálogo de ejercicios (RF-062) con búsqueda (RF-073).
+/// Panel del Entrenador.
+///
+/// RF-062: Visualizar ejercicios.
+/// RF-073: Buscar ejercicios.
+/// RF-066: Visualizar ejercicios de estiramiento.
+/// RF-077: Buscar ejercicios de estiramiento.
 class EjerciciosView extends StatefulWidget {
   const EjerciciosView({super.key});
 
@@ -19,16 +24,18 @@ class EjerciciosView extends StatefulWidget {
 }
 
 class _EjerciciosViewState extends State<EjerciciosView> {
-  // El controlador sobrevive a la pantalla: al volver, el campo muestra la búsqueda vigente.
-  late final _busqueda =
-      TextEditingController(text: context.read<EjerciciosController>().escrito);
+  late final _busqueda = TextEditingController(
+    text: context.read<EjerciciosController>().escrito,
+  );
 
   @override
   void initState() {
     super.initState();
-    // Se recarga cada vez que se abre la pantalla (necesita el token de la sesión).
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<EjerciciosController>().load();
+      if (mounted) {
+        context.read<EjerciciosController>().load();
+      }
     });
   }
 
@@ -43,147 +50,269 @@ class _EjerciciosViewState extends State<EjerciciosView> {
     final c = context.watch<EjerciciosController>();
     final items = c.items;
 
-    return SliverPage(slivers: [
-      const Box(
-        PageTitle(
-          eyebrow: 'Panel del entrenador',
-          title: 'Ejercicios',
-          subtitle: 'Catálogo con imagen y animación de cada ejercicio.',
-        ),
-        gapAfter: 16,
-      ),
-      const Box(MenuEntrenador(seccion: SeccionEntrenador.ejercicios),
-          gapAfter: 16),
-      Box(
-        Align(
-          alignment: Alignment.centerLeft,
-          child: PrimaryButton(
-            label: 'Nuevo ejercicio',
-            icon: Icons.add,
-            onPressed: () => _abrirFormulario(context),
+    return SliverPage(
+      slivers: [
+        const Box(
+          PageTitle(
+            eyebrow: 'Panel del entrenador',
+            title: 'Ejercicios',
+            subtitle: 'Catálogo con imagen y animación de cada ejercicio.',
           ),
+          gapAfter: 16,
         ),
-        gapAfter: 16,
-      ),
-      Box(
-        ValueListenableBuilder<TextEditingValue>(
-          valueListenable: _busqueda,
-          builder: (context, value, _) => TextField(
-            controller: _busqueda,
-            onChanged: c.buscar,
-            textInputAction: TextInputAction.search,
-            decoration: InputDecoration(
-              hintText:
-                  'Buscar por nombre (mín. ${EjerciciosController.minimoBusqueda} letras)',
-              prefixIcon: const Icon(Icons.search),
-              suffixIcon: value.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: 'Limpiar búsqueda',
-                      icon: const Icon(Icons.close),
-                      onPressed: () {
-                        _busqueda.clear();
-                        c.buscar('');
-                      },
-                    ),
+
+        // Menú existente del entrenador.
+        const Box(
+          MenuEntrenador(
+            seccion: SeccionEntrenador.ejercicios,
+          ),
+          gapAfter: 16,
+        ),
+
+        // SPRINT 3:
+        // Filtrar por tipo de ejercicio.
+        Box(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _Chip(
+                'Todos los tipos',
+                c.tipoFiltro == null,
+                () => c.filtrarTipo(null),
+              ),
+              _Chip(
+                'Entrenamiento',
+                c.tipoFiltro == 'entrenamiento',
+                () => c.filtrarTipo('entrenamiento'),
+              ),
+              _Chip(
+                'Calentamiento',
+                c.tipoFiltro == 'calentamiento',
+                () => c.filtrarTipo('calentamiento'),
+              ),
+              _Chip(
+                'Estiramiento',
+                c.tipoFiltro == 'estiramiento',
+                () => c.filtrarTipo('estiramiento'),
+              ),
+            ],
+          ),
+          gapAfter: 16,
+        ),
+
+        // Crear ejercicio.
+        Box(
+          Align(
+            alignment: Alignment.centerLeft,
+            child: PrimaryButton(
+              label: 'Nuevo ejercicio',
+              icon: Icons.add,
+              onPressed: () => _abrirFormulario(context),
             ),
           ),
+          gapAfter: 16,
         ),
-        gapAfter: c.textoMuyCorto ? 6 : 12,
-      ),
-      if (c.textoMuyCorto)
+
+        // Búsqueda existente.
         Box(
-          Text(
-              'Escribe al menos ${EjerciciosController.minimoBusqueda} letras para buscar.',
-              style: ts(13, color: AppColors.pizarra)),
-          gapAfter: 12,
+          ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _busqueda,
+            builder: (context, value, _) => TextField(
+              controller: _busqueda,
+              onChanged: c.buscar,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText:
+                    'Buscar por nombre (mín. ${EjerciciosController.minimoBusqueda} letras)',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: value.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Limpiar búsqueda',
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          _busqueda.clear();
+                          c.buscar('');
+                        },
+                      ),
+              ),
+            ),
+          ),
+          gapAfter: c.textoMuyCorto ? 6 : 12,
         ),
-      Box(
-        Wrap(
+
+        if (c.textoMuyCorto)
+          Box(
+            Text(
+              'Escribe al menos ${EjerciciosController.minimoBusqueda} letras para buscar.',
+              style: ts(
+                13,
+                color: AppColors.pizarra,
+              ),
+            ),
+            gapAfter: 12,
+          ),
+
+        // Filtros existentes por grupo muscular.
+        Box(
+          Wrap(
             spacing: 8,
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              _Chip('Todos', c.grupoFiltro == null, () => c.filtrarGrupo(null)),
-              for (final g in gruposMusculares)
-                _Chip(g, c.grupoFiltro == g, () => c.filtrarGrupo(g)),
-              _Chip('Ver inhabilitados', c.verInhabilitados,
-                  () => c.mostrarInhabilitados(!c.verInhabilitados),
-                  marca: true),
-            ]),
-        gapAfter: 16,
-      ),
-      if (c.error != null)
-        Box(ErrorPanel(message: c.error!, onRetry: () => c.load()))
-      else if (c.loading)
-        Box(SkeletonScope(
-          child: Column(children: [
-            for (var i = 0; i < 6; i++)
-              const Padding(
-                padding: EdgeInsets.only(bottom: 12),
-                child: Panel(child: SkeletonRow()),
+              _Chip(
+                'Todos',
+                c.grupoFiltro == null,
+                () => c.filtrarGrupo(null),
               ),
-          ]),
-        ))
-      else if (items.isEmpty)
-        Box(Panel(
-          child: Text(
-            c.hayFiltros
-                ? 'No hay ejercicios que coincidan con la búsqueda.'
-                : 'Todavía no hay ejercicios en el catálogo. Crea el primero con "Nuevo ejercicio".',
-            style: ts(15, color: AppColors.pizarra),
+              for (final g in gruposMusculares)
+                _Chip(
+                  g,
+                  c.grupoFiltro == g,
+                  () => c.filtrarGrupo(g),
+                ),
+              _Chip(
+                'Ver inhabilitados',
+                c.verInhabilitados,
+                () => c.mostrarInhabilitados(
+                  !c.verInhabilitados,
+                ),
+                marca: true,
+              ),
+            ],
           ),
-        ))
-      else ...[
-        // REGLA 4: lista virtualizada
-        SliverRejilla(
-          itemCount: items.length,
-          itemBuilder: (context, i) => _EjercicioTile(items[i]),
+          gapAfter: 16,
         ),
-        if (c.cargandoMas)
-          const Box(SkeletonScope(child: Panel(child: SkeletonRow())))
-        else if (c.hayMas)
-          Box(Center(
-            child: SecondaryButton(
-                label: 'Cargar más', onPressed: () => _cargarMas(context)),
-          )),
+
+        // Errores de carga.
+        if (c.error != null)
+          Box(
+            ErrorPanel(
+              message: c.error!,
+              onRetry: () => c.load(),
+            ),
+          )
+
+        // Pantalla de carga.
+        else if (c.loading)
+          Box(
+            SkeletonScope(
+              child: Column(
+                children: [
+                  for (var i = 0; i < 6; i++)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Panel(
+                        child: SkeletonRow(),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          )
+
+        // Sin ejercicios.
+        else if (items.isEmpty)
+          Box(
+            Panel(
+              child: Text(
+                c.hayFiltros
+                    ? 'No hay ejercicios que coincidan con la búsqueda.'
+                    : 'Todavía no hay ejercicios en el catálogo. Crea el primero con "Nuevo ejercicio".',
+                style: ts(
+                  15,
+                  color: AppColors.pizarra,
+                ),
+              ),
+            ),
+          )
+
+        // Listado existente.
+        else ...[
+          SliverRejilla(
+            itemCount: items.length,
+            itemBuilder: (context, i) => _EjercicioTile(items[i]),
+          ),
+          if (c.cargandoMas)
+            const Box(
+              SkeletonScope(
+                child: Panel(
+                  child: SkeletonRow(),
+                ),
+              ),
+            )
+          else if (c.hayMas)
+            Box(
+              Center(
+                child: SecondaryButton(
+                  label: 'Cargar más',
+                  onPressed: () => _cargarMas(context),
+                ),
+              ),
+            ),
+        ],
       ],
-    ]);
+    );
   }
 }
 
+/// Mostrar avisos del controlador.
 void _mostrarAviso(BuildContext context) {
   final aviso = context.read<EjerciciosController>().tomarAviso();
+
   if (aviso != null) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(aviso)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(aviso)),
+    );
   }
 }
 
+/// Cargar más ejercicios.
 Future<void> _cargarMas(BuildContext context) async {
   await context.read<EjerciciosController>().cargarMas();
-  if (context.mounted) _mostrarAviso(context);
+
+  if (context.mounted) {
+    _mostrarAviso(context);
+  }
 }
 
-void _abrirFormulario(BuildContext context, [Ejercicio? ejercicio]) {
+/// Abrir formulario para crear o editar.
+void _abrirFormulario(
+  BuildContext context, [
+  Ejercicio? ejercicio,
+]) {
   final c = context.read<EjerciciosController>();
   c.limpiarErrorGuardar();
+
   showDialog<void>(
     context: context,
-    barrierDismissible:
-        false, // no se cierra por accidente a mitad de un formulario
-    builder: (_) => EjercicioFormDialog(controller: c, ejercicio: ejercicio),
+    barrierDismissible: false,
+    builder: (_) => EjercicioFormDialog(
+      controller: c,
+      ejercicio: ejercicio,
+    ),
   );
 }
 
-/// RF-055: pide confirmación antes de inhabilitar. Reactivar no la necesita.
-Future<void> _cambiarEstado(BuildContext context, Ejercicio e,
-    {required bool activo}) async {
+/// Inhabilitar o reactivar ejercicios.
+///
+/// RF-055 / RF-059.
+/// Mantiene confirmación antes de inhabilitar.
+Future<void> _cambiarEstado(
+  BuildContext context,
+  Ejercicio e, {
+  required bool activo,
+}) async {
   if (!activo) {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.card,
-        title: Text('INHABILITAR EJERCICIO', style: display(26)),
+        title: Text(
+          'INHABILITAR EJERCICIO',
+          style: display(26),
+        ),
         content: Text(
           '"${e.nombre}" dejará de estar disponible para armar planes. Los planes que ya lo tienen lo conservan. Puedes reactivarlo cuando quieras.',
           style: ts(15),
@@ -191,37 +320,66 @@ Future<void> _cambiarEstado(BuildContext context, Ejercicio e,
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text('Cancelar',
-                style: ts(15, weight: kSemi, color: AppColors.cobalto)),
+            child: Text(
+              'Cancelar',
+              style: ts(
+                15,
+                weight: kSemi,
+                color: AppColors.cobalto,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text('Inhabilitar',
-                style: ts(15, weight: kSemi, color: AppColors.danger)),
+            child: Text(
+              'Inhabilitar',
+              style: ts(
+                15,
+                weight: kSemi,
+                color: AppColors.danger,
+              ),
+            ),
           ),
         ],
       ),
     );
-    if (confirmar != true || !context.mounted) return;
+
+    if (confirmar != true || !context.mounted) {
+      return;
+    }
   }
 
   final messenger = ScaffoldMessenger.of(context);
   final c = context.read<EjerciciosController>();
-  final ok = await c.cambiarEstado(e, activo: activo);
-  messenger.showSnackBar(SnackBar(
-    content: Text(ok
-        ? 'Ejercicio ${activo ? 'reactivado' : 'inhabilitado'}'
-        : c.tomarAviso() ?? ''),
-  ));
+
+  final ok = await c.cambiarEstado(
+    e,
+    activo: activo,
+  );
+
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(
+        ok
+            ? 'Ejercicio ${activo ? 'reactivado' : 'inhabilitado'}'
+            : c.tomarAviso() ?? '',
+      ),
+    ),
+  );
 }
 
+/// Componente existente para los filtros.
 class _Chip extends StatelessWidget {
-  const _Chip(this.label, this.selected, this.onTap, {this.marca = false});
+  const _Chip(
+    this.label,
+    this.selected,
+    this.onTap, {
+    this.marca = false,
+  });
+
   final String label;
   final bool selected;
   final VoidCallback onTap;
-
-  /// true para un interruptor (muestra el check); false para una opción de un grupo.
   final bool marca;
 
   @override
@@ -235,119 +393,241 @@ class _Chip extends StatelessWidget {
         selectedColor: AppColors.indigo,
         side: BorderSide.none,
         shape: const StadiumBorder(),
-        labelStyle: ts(14,
-            weight: kSemi, color: selected ? Colors.white : AppColors.ink),
+        labelStyle: ts(
+          14,
+          weight: kSemi,
+          color: selected ? Colors.white : AppColors.ink,
+        ),
       );
 }
 
+/// Tarjeta de ejercicio.
 class _EjercicioTile extends StatelessWidget {
   const _EjercicioTile(this.e);
+
   final Ejercicio e;
 
   @override
   Widget build(BuildContext context) => SelectableCard(
         selected: false,
-        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        padding: const EdgeInsets.fromLTRB(
+          12,
+          10,
+          8,
+          10,
+        ),
         semanticLabel: '${e.nombre}, ${e.grupoMuscular ?? ''}, ${e.estado}',
         onTap: () => _mostrarDetalle(context, e),
-        child: Row(children: [
-          ImagenRed(e.imagenUrl, size: 64),
-          const SizedBox(width: 14),
-          Expanded(
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(e.nombre,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: ts(16,
+        child: Row(
+          children: [
+            ImagenRed(
+              e.imagenUrl,
+              size: 64,
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    e.nombre,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ts(
+                      16,
                       weight: kSemi,
-                      color: e.activo ? AppColors.ink : AppColors.pizarra)),
-              const SizedBox(height: 2),
-              Text(
-                e.resumen.isEmpty ? 'Sin datos' : e.resumen,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: ts(14, color: AppColors.pizarra),
+                      color: e.activo ? AppColors.ink : AppColors.pizarra,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    e.resumen.isEmpty ? 'Sin datos' : e.resumen,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: ts(
+                      14,
+                      color: AppColors.pizarra,
+                    ),
+                  ),
+                ],
               ),
-            ]),
-          ),
-          if (!e.activo) ...[
-            const SizedBox(width: 12),
-            Text('Inhabilitado',
-                style: ts(13, weight: kSemi, color: AppColors.danger)),
-          ],
-          PopupMenuButton<String>(
-            tooltip: 'Opciones de ${e.nombre}',
-            icon: const Icon(Icons.more_vert, color: AppColors.pizarra),
-            onSelected: (accion) => switch (accion) {
-              'editar' => _abrirFormulario(context, e),
-              'inhabilitar' => _cambiarEstado(context, e, activo: false),
-              _ => _cambiarEstado(context, e, activo: true),
-            },
-            itemBuilder: (_) => [
-              if (e.activo) ...[
-                _opcion('editar', Icons.edit_outlined, 'Editar', AppColors.ink),
-                _opcion('inhabilitar', Icons.block, 'Inhabilitar',
-                    AppColors.danger),
-              ] else
-                _opcion('reactivar', Icons.check_circle_outline, 'Reactivar',
-                    AppColors.success),
+            ),
+            if (!e.activo) ...[
+              const SizedBox(width: 12),
+              Text(
+                'Inhabilitado',
+                style: ts(
+                  13,
+                  weight: kSemi,
+                  color: AppColors.danger,
+                ),
+              ),
             ],
-          ),
-        ]),
+            PopupMenuButton<String>(
+              tooltip: 'Opciones de ${e.nombre}',
+              icon: const Icon(
+                Icons.more_vert,
+                color: AppColors.pizarra,
+              ),
+              onSelected: (accion) => switch (accion) {
+                'editar' => _abrirFormulario(context, e),
+                'inhabilitar' => _cambiarEstado(
+                    context,
+                    e,
+                    activo: false,
+                  ),
+                _ => _cambiarEstado(
+                    context,
+                    e,
+                    activo: true,
+                  ),
+              },
+              itemBuilder: (_) => [
+                if (e.activo) ...[
+                  _opcion(
+                    'editar',
+                    Icons.edit_outlined,
+                    'Editar',
+                    AppColors.ink,
+                  ),
+                  _opcion(
+                    'inhabilitar',
+                    Icons.block,
+                    'Inhabilitar',
+                    AppColors.danger,
+                  ),
+                ] else
+                  _opcion(
+                    'reactivar',
+                    Icons.check_circle_outline,
+                    'Reactivar',
+                    AppColors.success,
+                  ),
+              ],
+            ),
+          ],
+        ),
       );
 }
 
+/// Opción del menú de ejercicio.
 PopupMenuItem<String> _opcion(
-        String valor, IconData icono, String texto, Color color) =>
-    PopupMenuItem(
-      value: valor,
-      child: Row(children: [
-        Icon(icono, size: 18, color: color),
+  String valor,
+  IconData icono,
+  String texto,
+  Color color,
+) {
+  return PopupMenuItem<String>(
+    value: valor,
+    child: Row(
+      children: [
+        Icon(
+          icono,
+          size: 18,
+          color: color,
+        ),
         const SizedBox(width: 10),
-        Text(texto, style: ts(14, color: color)),
-      ]),
-    );
+        Text(
+          texto,
+          style: ts(
+            14,
+            color: color,
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
-/// RF-062: todos los datos del ejercicio, con su animación.
-void _mostrarDetalle(BuildContext context, Ejercicio e) {
+/// Mostrar detalle de un ejercicio.
+///
+/// Sprint 3: incorpora el tipo de ejercicio.
+void _mostrarDetalle(
+  BuildContext context,
+  Ejercicio e,
+) {
   showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
       backgroundColor: AppColors.card,
-      title: Text(e.nombre.toUpperCase(), style: display(26)),
+      title: Text(
+        e.nombre.toUpperCase(),
+        style: display(26),
+      ),
       content: SizedBox(
         width: 480,
         child: SingleChildScrollView(
           child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (e.gifUrl != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Center(
-                        child: Semantics(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (e.gifUrl != null)
+                Padding(
+                  padding: const EdgeInsets.only(
+                    bottom: 16,
+                  ),
+                  child: Center(
+                    child: Semantics(
                       image: true,
                       label: 'Demostración del ejercicio ${e.nombre}',
-                      // WCAG 2.3.3: imagen fija si el sistema pide reducir movimiento
                       child: ImagenRed(
-                          MediaQuery.disableAnimationsOf(context) ? (e.imagenUrl ?? e.gifUrl) : e.gifUrl,
-                          size: 240,
-                          radius: 16),
-                    )),
+                        MediaQuery.disableAnimationsOf(
+                          context,
+                        )
+                            ? (e.imagenUrl ?? e.gifUrl)
+                            : e.gifUrl,
+                        size: 240,
+                        radius: 16,
+                      ),
+                    ),
                   ),
-                _Dato('Grupo muscular', e.grupoMuscular),
-                _Dato('Herramienta o equipo', e.herramienta),
-                _Dato('Estado', e.estado),
-                if (e.tiempoRecomendado != null)
-                  _Dato('Tiempo recomendado', '${e.tiempoRecomendado} min'),
-                _Dato('Instrucciones', e.instrucciones),
-                if (e.recomendaciones != null)
-                  _Dato('Recomendaciones', e.recomendaciones),
-                if (e.observaciones != null)
-                  _Dato('Observaciones', e.observaciones),
-              ]),
+                ),
+
+              // Sprint 3: mostrar el tipo.
+              _Dato(
+                'Tipo de ejercicio',
+                e.tipoEtiqueta,
+              ),
+
+              _Dato(
+                'Grupo muscular',
+                e.grupoMuscular,
+              ),
+
+              _Dato(
+                'Herramienta o equipo',
+                e.herramienta,
+              ),
+
+              _Dato(
+                'Estado',
+                e.estado,
+              ),
+
+              if (e.tiempoRecomendado != null)
+                _Dato(
+                  'Tiempo recomendado',
+                  '${e.tiempoRecomendado} min',
+                ),
+
+              _Dato(
+                'Instrucciones',
+                e.instrucciones,
+              ),
+
+              if (e.recomendaciones != null)
+                _Dato(
+                  'Recomendaciones',
+                  e.recomendaciones,
+                ),
+
+              if (e.observaciones != null)
+                _Dato(
+                  'Observaciones',
+                  e.observaciones,
+                ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -357,33 +637,59 @@ void _mostrarDetalle(BuildContext context, Ejercicio e) {
               Navigator.of(ctx).pop();
               _abrirFormulario(context, e);
             },
-            child: Text('Editar',
-                style: ts(15, weight: kSemi, color: AppColors.cobalto)),
+            child: Text(
+              'Editar',
+              style: ts(
+                15,
+                weight: kSemi,
+                color: AppColors.cobalto,
+              ),
+            ),
           ),
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(),
-          child: Text('Cerrar',
-              style: ts(15, weight: kSemi, color: AppColors.cobalto)),
+          child: Text(
+            'Cerrar',
+            style: ts(
+              15,
+              weight: kSemi,
+              color: AppColors.cobalto,
+            ),
+          ),
         ),
       ],
     ),
   );
 }
 
+/// Mostrar una propiedad en el detalle.
 class _Dato extends StatelessWidget {
-  const _Dato(this.label, this.valor);
+  const _Dato(
+    this.label,
+    this.valor,
+  );
+
   final String label;
   final String? valor;
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Eyebrow(label),
-          const SizedBox(height: 2),
-          Text(valor ?? 'Sin especificar',
-              style: ts(16,
-                  color: valor == null ? AppColors.pizarra : AppColors.ink)),
-        ]),
+        padding: const EdgeInsets.only(
+          bottom: 12,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Eyebrow(label),
+            const SizedBox(height: 2),
+            Text(
+              valor ?? 'Sin especificar',
+              style: ts(
+                16,
+                color: valor == null ? AppColors.pizarra : AppColors.ink,
+              ),
+            ),
+          ],
+        ),
       );
 }

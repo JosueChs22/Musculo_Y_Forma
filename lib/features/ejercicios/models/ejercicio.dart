@@ -1,18 +1,46 @@
-/// Partes del cuerpo con las que se clasifica el catálogo (las mismas que valida la API).
+/// Grupos musculares admitidos por la API.
 const gruposMusculares = [
-  'Pecho', 'Espalda', 'Hombros', 'Brazos', 'Antebrazos', 'Abdomen',
-  'Muslos', 'Pantorrillas', 'Cardio', 'Cuello',
+  'Pecho',
+  'Espalda',
+  'Hombros',
+  'Brazos',
+  'Antebrazos',
+  'Abdomen',
+  'Muslos',
+  'Pantorrillas',
+  'Cardio',
+  'Cuello',
 ];
 
-/// Ejercicio del catálogo tal como lo devuelve la API (DTO en camelCase).
+/// Tipos de ejercicio disponibles.
+const tiposEjercicio = [
+  'entrenamiento',
+  'calentamiento',
+  'estiramiento',
+];
+
+String etiquetaTipoEjercicio(String tipo) {
+  switch (tipo) {
+    case 'calentamiento':
+      return 'Calentamiento';
+    case 'estiramiento':
+      return 'Estiramiento';
+    default:
+      return 'Entrenamiento';
+  }
+}
+
+/// Ejercicio del catálogo recibido desde la API.
 class Ejercicio {
   const Ejercicio({
     required this.id,
     required this.nombre,
+    this.tipo = 'entrenamiento',
     this.grupoMuscular,
     this.herramienta,
     this.imagenUrl,
     this.gifUrl,
+    this.numeroMaquina,
     this.tiempoRecomendado,
     this.instrucciones,
     this.observaciones,
@@ -22,14 +50,12 @@ class Ejercicio {
 
   final String id;
   final String nombre;
+  final String tipo;
   final String? grupoMuscular;
   final String? herramienta;
-
-  /// Miniatura estática (para listas) y animación (para el detalle).
   final String? imagenUrl;
   final String? gifUrl;
-
-  /// En minutos.
+  final num? numeroMaquina;
   final num? tiempoRecomendado;
   final String? instrucciones;
   final String? observaciones;
@@ -38,48 +64,67 @@ class Ejercicio {
 
   String get estado => activo ? 'Activo' : 'Inhabilitado';
 
-  /// "Cuádriceps · Barra · 5 min", solo con los datos que existan.
+  String get tipoEtiqueta => etiquetaTipoEjercicio(tipo);
+
+  bool get esEstiramiento => tipo == 'estiramiento';
+
+  bool get esCalentamiento => tipo == 'calentamiento';
+
   String get resumen => [
         grupoMuscular,
         herramienta,
         if (tiempoRecomendado != null) '$tiempoRecomendado min',
       ].whereType<String>().join(' · ');
 
-  factory Ejercicio.fromJson(Map<String, dynamic> json) => Ejercicio(
-        id: json['id'] as String,
-        nombre: json['nombre'] as String,
-        grupoMuscular: json['grupoMuscular'] as String?,
-        herramienta: json['herramienta'] as String?,
-        imagenUrl: json['imagen'] as String?,
-        gifUrl: json['gif'] as String?,
-        tiempoRecomendado: json['tiempoRecomendado'] as num?,
-        instrucciones: json['instrucciones'] as String?,
-        observaciones: json['observaciones'] as String?,
-        recomendaciones: json['recomendaciones'] as String?,
-        activo: json['estado'] == 'Activo',
-      );
+  factory Ejercicio.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return Ejercicio(
+      id: json['id'] as String,
+      nombre: json['nombre'] as String,
+      tipo: json['tipo'] as String? ?? 'entrenamiento',
+      grupoMuscular: json['grupoMuscular'] as String?,
+      herramienta: json['herramienta'] as String?,
+      imagenUrl: json['imagen'] as String?,
+      gifUrl: json['gif'] as String?,
+      numeroMaquina: json['numeroMaquina'] as num?,
+      tiempoRecomendado: json['tiempoRecomendado'] as num?,
+      instrucciones: json['instrucciones'] as String?,
+      observaciones: json['observaciones'] as String?,
+      recomendaciones: json['recomendaciones'] as String?,
+      activo: json['estado'] == 'Activo',
+    );
+  }
 
-  Ejercicio conEstado({required bool activo}) => Ejercicio(
-        id: id,
-        nombre: nombre,
-        grupoMuscular: grupoMuscular,
-        herramienta: herramienta,
-        imagenUrl: imagenUrl,
-        gifUrl: gifUrl,
-        tiempoRecomendado: tiempoRecomendado,
-        instrucciones: instrucciones,
-        observaciones: observaciones,
-        recomendaciones: recomendaciones,
-        activo: activo,
-      );
+  Ejercicio conEstado({
+    required bool activo,
+  }) {
+    return Ejercicio(
+      id: id,
+      nombre: nombre,
+      tipo: tipo,
+      grupoMuscular: grupoMuscular,
+      herramienta: herramienta,
+      imagenUrl: imagenUrl,
+      gifUrl: gifUrl,
+      numeroMaquina: numeroMaquina,
+      tiempoRecomendado: tiempoRecomendado,
+      instrucciones: instrucciones,
+      observaciones: observaciones,
+      recomendaciones: recomendaciones,
+      activo: activo,
+    );
+  }
 }
 
-/// Lo que el entrenador llena en el formulario para crear o actualizar.
+/// Datos enviados al crear o actualizar ejercicios.
 class DatosEjercicio {
   const DatosEjercicio({
     required this.nombre,
+    this.tipo,
     this.grupoMuscular,
     this.herramienta,
+    this.numeroMaquina,
     this.tiempoRecomendado,
     this.instrucciones,
     this.observaciones,
@@ -87,30 +132,53 @@ class DatosEjercicio {
   });
 
   final String nombre;
+
+  /// Opcional para conservar compatibilidad
+  /// con formularios existentes.
+  final String? tipo;
+
   final String? grupoMuscular;
   final String? herramienta;
+  final num? numeroMaquina;
   final num? tiempoRecomendado;
   final String? instrucciones;
   final String? observaciones;
   final String? recomendaciones;
 
-  static String? _limpio(String? v) => (v == null || v.trim().isEmpty) ? null : v.trim();
+  static String? _limpio(String? valor) {
+    if (valor == null || valor.trim().isEmpty) {
+      return null;
+    }
 
-  /// Cuerpo de la petición, en snake_case como pide la API.
-  Map<String, dynamic> toJson() => {
-        'nombre': nombre.trim(),
-        'grupo_muscular': _limpio(grupoMuscular),
-        'herramienta': _limpio(herramienta),
-        'tiempo_recomendado': tiempoRecomendado,
-        'instrucciones': _limpio(instrucciones),
-        'observaciones': _limpio(observaciones),
-        'recomendaciones': _limpio(recomendaciones),
-      };
+    return valor.trim();
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'nombre': nombre.trim(),
+
+      // Solo se envía cuando la pantalla
+      // especifica el tipo.
+      if (tipo != null) 'tipo': tipo,
+
+      'grupo_muscular': _limpio(grupoMuscular),
+      'herramienta': _limpio(herramienta),
+      if (numeroMaquina != null) 'numero_maquina': numeroMaquina,
+      'tiempo_recomendado': tiempoRecomendado,
+      'instrucciones': _limpio(instrucciones),
+      'observaciones': _limpio(observaciones),
+      'recomendaciones': _limpio(recomendaciones),
+    };
+  }
 }
 
-/// Una página del catálogo. [siguiente] es null cuando ya no hay más.
+/// Respuesta paginada de ejercicios.
 class PaginaEjercicios {
-  const PaginaEjercicios(this.items, this.siguiente);
+  const PaginaEjercicios(
+    this.items,
+    this.siguiente,
+  );
+
   final List<Ejercicio> items;
   final String? siguiente;
 }
